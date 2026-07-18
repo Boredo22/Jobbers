@@ -1,0 +1,24 @@
+{
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"compilerOptions": {
+		// --- Correctness: the whole reason we chose TypeScript ---
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+		"forceConsistentCasingInFileNames": true,
+
+		// --- Language level ---
+		"target": "ES2022",
+		"lib": ["ES2022"],
+		"moduleDetection": "force",
+
+		// --- Interop / ergonomics ---
+		"esModuleInterop": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"isolatedModules": true,
+
+		// We only typecheck here (each app has its own build tool: Vite / tsx / tsup)
+		"noEmit": true
+	}
+}

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Secrets — never commit real values; .env.example is the committed template
+.env
+.env.local
+*.local
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Runtime data volumes (resumes, ai-queue, parquet exports) — added in later phases
+apps/api/data/resumes/
+ai-queue/pending/
+ai-queue/done/
+exports/
+
+# Editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
