@@ -1,0 +1,282 @@
+[
+	{
+		"name": "Snorkel AI",
+		"atsType": "greenhouse",
+		"atsToken": "snorkelai",
+		"tier": "A"
+	},
+	{
+		"name": "Future",
+		"atsType": "greenhouse",
+		"atsToken": "future",
+		"tier": "A"
+	},
+	{
+		"name": "WITHIN / Rai",
+		"atsType": "greenhouse",
+		"atsToken": "agencywithin",
+		"tier": "A"
+	},
+	{
+		"name": "Beautiful.ai",
+		"atsType": "greenhouse",
+		"atsToken": "beautifulai",
+		"tier": "B"
+	},
+	{
+		"name": "PerfectServe",
+		"atsType": "greenhouse",
+		"atsToken": "perfectserve",
+		"tier": "B"
+	},
+	{
+		"name": "Databricks",
+		"atsType": "greenhouse",
+		"atsToken": "databricks",
+		"tier": "B"
+	},
+	{
+		"name": "Airtable",
+		"atsType": "greenhouse",
+		"atsToken": "airtable",
+		"tier": "B"
+	},
+	{
+		"name": "Baton (Ryder)",
+		"atsType": "greenhouse",
+		"atsToken": "baton",
+		"tier": "A"
+	},
+	{
+		"name": "Human Agency",
+		"atsType": "greenhouse",
+		"atsToken": "humanagency",
+		"tier": "C-travel"
+	},
+	{
+		"name": "Sigma Computing",
+		"atsType": "greenhouse",
+		"atsToken": "sigmacomputing",
+		"tier": "B"
+	},
+	{
+		"name": "Neo4j",
+		"atsType": "greenhouse",
+		"atsToken": "neo4j",
+		"tier": "B"
+	},
+	{
+		"name": "Weedmaps",
+		"atsType": "greenhouse",
+		"atsToken": "weedmaps77",
+		"tier": "C"
+	},
+	{
+		"name": "Dutchie",
+		"atsType": "greenhouse",
+		"atsToken": "thedutchie",
+		"tier": "C"
+	},
+	{
+		"name": "LeafLink",
+		"atsType": "greenhouse",
+		"atsToken": "leaflink",
+		"tier": "C"
+	},
+	{
+		"name": "Nabis",
+		"atsType": "greenhouse",
+		"atsToken": "nabis",
+		"tier": "C"
+	},
+	{
+		"name": "Cresta",
+		"atsType": "greenhouse",
+		"atsToken": "cresta",
+		"tier": "A"
+	},
+	{
+		"name": "Dataiku",
+		"atsType": "greenhouse",
+		"atsToken": "dataiku",
+		"tier": "A"
+	},
+	{
+		"name": "Instabase",
+		"atsType": "greenhouse",
+		"atsToken": "instabase",
+		"tier": "A"
+	},
+	{ "name": "Make", "atsType": "greenhouse", "atsToken": "make", "tier": "A" },
+	{
+		"name": "Workato",
+		"atsType": "greenhouse",
+		"atsToken": "workato",
+		"tier": "A"
+	},
+	{
+		"name": "Cohere Health",
+		"atsType": "greenhouse",
+		"atsToken": "coherehealth",
+		"tier": "A"
+	},
+	{
+		"name": "Celonis",
+		"atsType": "greenhouse",
+		"atsToken": "celonis",
+		"tier": "A"
+	},
+	{
+		"name": "Alloy",
+		"atsType": "greenhouse",
+		"atsToken": "alloy",
+		"tier": "A"
+	},
+	{
+		"name": "Checkr",
+		"atsType": "greenhouse",
+		"atsToken": "checkr",
+		"tier": "B"
+	},
+	{ "name": "Brex", "atsType": "greenhouse", "atsToken": "brex", "tier": "B" },
+	{
+		"name": "Mercury",
+		"atsType": "greenhouse",
+		"atsToken": "mercury",
+		"tier": "B"
+	},
+	{
+		"name": "Gusto",
+		"atsType": "greenhouse",
+		"atsToken": "gusto",
+		"tier": "B"
+	},
+	{
+		"name": "Samsara",
+		"atsType": "greenhouse",
+		"atsToken": "samsara",
+		"tier": "B"
+	},
+	{
+		"name": "Verkada",
+		"atsType": "greenhouse",
+		"atsToken": "verkada",
+		"tier": "B"
+	},
+	{
+		"name": "Toast",
+		"atsType": "greenhouse",
+		"atsToken": "toast",
+		"tier": "B"
+	},
+	{
+		"name": "Figma",
+		"atsType": "greenhouse",
+		"atsToken": "figma",
+		"tier": "B"
+	},
+	{
+		"name": "GitLab",
+		"atsType": "greenhouse",
+		"atsToken": "gitlab",
+		"tier": "B"
+	},
+	{
+		"name": "Vercel",
+		"atsType": "greenhouse",
+		"atsToken": "vercel",
+		"tier": "B"
+	},
+	{
+		"name": "Fireworks AI",
+		"atsType": "greenhouse",
+		"atsToken": "fireworksai",
+		"tier": "B"
+	},
+	{
+		"name": "Scale AI",
+		"atsType": "greenhouse",
+		"atsToken": "scaleai",
+		"tier": "C"
+	},
+	{
+		"name": "Anthropic",
+		"atsType": "greenhouse",
+		"atsToken": "anthropic",
+		"tier": "C"
+	},
+	{
+		"name": "Imbue",
+		"atsType": "greenhouse",
+		"atsToken": "imbue",
+		"tier": "C"
+	},
+
+	{
+		"name": "Jane Technologies",
+		"atsType": "lever",
+		"atsToken": "iheartjane",
+		"tier": "C"
+	},
+	{ "name": "Mistral", "atsType": "lever", "atsToken": "mistral", "tier": "C" },
+	{
+		"name": "Palantir",
+		"atsType": "lever",
+		"atsToken": "palantir",
+		"tier": "C"
+	},
+
+	{ "name": "PostHog", "atsType": "ashby", "atsToken": "posthog", "tier": "B" },
+	{ "name": "Ashby", "atsType": "ashby", "atsToken": "ashby", "tier": "B" },
+	{ "name": "Ramp", "atsType": "ashby", "atsToken": "ramp", "tier": "A" },
+	{
+		"name": "Hightouch",
+		"atsType": "ashby",
+		"atsToken": "hightouch",
+		"tier": "B"
+	},
+	{ "name": "Vellum", "atsType": "ashby", "atsToken": "vellum", "tier": "B" },
+	{ "name": "Decagon", "atsType": "ashby", "atsToken": "decagon", "tier": "B" },
+	{ "name": "Dust", "atsType": "ashby", "atsToken": "dust", "tier": "B" },
+	{ "name": "Modal", "atsType": "ashby", "atsToken": "modal", "tier": "B" },
+	{ "name": "Baseten", "atsType": "ashby", "atsToken": "baseten", "tier": "B" },
+	{ "name": "Sierra", "atsType": "ashby", "atsToken": "sierra", "tier": "B" },
+	{ "name": "Credal", "atsType": "ashby", "atsToken": "credal", "tier": "B" },
+	{ "name": "Writer", "atsType": "ashby", "atsToken": "writer", "tier": "A" },
+	{ "name": "Gamma", "atsType": "ashby", "atsToken": "gamma", "tier": "A" },
+	{ "name": "Abridge", "atsType": "ashby", "atsToken": "abridge", "tier": "A" },
+	{
+		"name": "OpenEvidence",
+		"atsType": "ashby",
+		"atsToken": "openevidence",
+		"tier": "A"
+	},
+	{ "name": "Granola", "atsType": "ashby", "atsToken": "granola", "tier": "B" },
+	{ "name": "Notion", "atsType": "ashby", "atsToken": "notion", "tier": "B" },
+	{ "name": "Linear", "atsType": "ashby", "atsToken": "linear", "tier": "B" },
+	{ "name": "Replit", "atsType": "ashby", "atsToken": "replit", "tier": "B" },
+	{
+		"name": "ElevenLabs",
+		"atsType": "ashby",
+		"atsToken": "elevenlabs",
+		"tier": "B"
+	},
+	{ "name": "Suno", "atsType": "ashby", "atsToken": "suno", "tier": "B" },
+	{ "name": "Warp", "atsType": "ashby", "atsToken": "warp", "tier": "B" },
+	{ "name": "Harvey", "atsType": "ashby", "atsToken": "harvey", "tier": "B" },
+	{
+		"name": "Perplexity",
+		"atsType": "ashby",
+		"atsToken": "perplexity",
+		"tier": "B"
+	},
+	{ "name": "Cursor", "atsType": "ashby", "atsToken": "cursor", "tier": "B" },
+	{ "name": "Runway", "atsType": "ashby", "atsToken": "runway", "tier": "B" },
+	{ "name": "OpenAI", "atsType": "ashby", "atsToken": "openai", "tier": "C" },
+	{
+		"name": "Cognition",
+		"atsType": "ashby",
+		"atsToken": "cognition",
+		"tier": "C"
+	}
+]

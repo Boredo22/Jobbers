@@ -31,7 +31,10 @@ import {
 // --- companies: the ~50 employers we poll (build plan §3) -------------------
 export const companies = pgTable("companies", {
 	id: uuid("id").defaultRandom().primaryKey(),
-	name: text("name").notNull(),
+	// UNIQUE so the seed is idempotent: re-running inserts with
+	// onConflictDoNothing(target: name) skip rows that already exist instead of
+	// duplicating them. The company name is our stable business key.
+	name: text("name").notNull().unique(),
 	atsType: text("ats_type", {
 		enum: ["greenhouse", "lever", "ashby", "manual"],
 	}).notNull(),

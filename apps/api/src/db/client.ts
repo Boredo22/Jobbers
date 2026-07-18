@@ -17,6 +17,8 @@ import * as schema from "./schema";
 // the pool is created once for the process — you don't open a connection per
 // request the way naive code sometimes does.
 // ---------------------------------------------------------------------------
-const queryClient = postgres(env.DATABASE_URL);
+// Exported so one-off scripts (e.g. the seed) can close the pool and let the
+// process exit cleanly. Long-lived code (the server) never needs to end it.
+export const queryClient = postgres(env.DATABASE_URL);
 
 export const db = drizzle(queryClient, { schema });
