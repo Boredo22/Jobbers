@@ -1,0 +1,23 @@
+# Dev flavor: ONLY Postgres runs in Docker.
+# The api and web dev servers run directly on your machine for instant hot-reload.
+# The full 3-container "deployed" stack (api + web) is added in Phase 8.
+services:
+  db:
+    image: postgres:16
+    container_name: jobber-db
+    environment:
+      POSTGRES_USER: jobber
+      POSTGRES_PASSWORD: ${DB_PASSWORD} # read from the root .env file (gitignored)
+      POSTGRES_DB: jobber
+    ports:
+      - "5432:5432" # expose to the host so tsx/Drizzle can connect from your machine
+    volumes:
+      - dbdata:/var/lib/postgresql/data # named volume = data survives `docker compose down`
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobber -d jobber"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  dbdata:
