@@ -15,6 +15,12 @@ importers:
         specifier: ^5.6.0
         version: 5.9.3
 
+  packages/shared:
+    dependencies:
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
+
 packages:
 
   '@biomejs/biome@2.5.4':
@@ -79,6 +85,9 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
 snapshots:
 
   '@biomejs/biome@2.5.4':
@@ -117,3 +126,5 @@ snapshots:
     optional: true
 
   typescript@5.9.3: {}
+
+  zod@3.25.76: {}
