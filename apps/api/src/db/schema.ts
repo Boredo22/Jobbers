@@ -178,6 +178,24 @@ export const applicationEvents = pgTable("application_events", {
 	detail: text("detail"),
 });
 
+// --- poll_runs: one row per poller execution (ops/observability) ------------
+// Feeds the Companies page (which boards are ok / failing) and is the audit
+// trail proving the scheduler ran. Written once at the end of each runPoll().
+export const pollRuns = pgTable("poll_runs", {
+	id: uuid("id").defaultRandom().primaryKey(),
+	startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+	finishedAt: timestamp("finished_at", { withTimezone: true }).notNull(),
+	companiesOk: integer("companies_ok").notNull(),
+	companiesFailed: integer("companies_failed").notNull(),
+	newCount: integer("new_count").notNull(), // postings first seen this run
+	candidateCount: integer("candidate_count").notNull(), // new ones passing prefilter
+	// Which boards failed and why — so the UI can show "failing" per company.
+	failures: jsonb("failures")
+		.$type<{ company: string; reason: string }[]>()
+		.notNull()
+		.default([]),
+});
+
 // --- ai_runs: the cost/audit ledger (build plan §3; interview gold) ---------
 export const aiRuns = pgTable("ai_runs", {
 	id: uuid("id").defaultRandom().primaryKey(),

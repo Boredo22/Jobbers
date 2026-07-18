@@ -4,6 +4,7 @@ import {
 	validatorCompiler,
 	type ZodTypeProvider,
 } from "fastify-type-provider-zod";
+import { adminRoutes } from "./modules/admin/routes";
 
 // `.withTypeProvider<ZodTypeProvider>()` rewires Fastify so that any Zod schema
 // we attach to a route drives BOTH runtime validation and the handler's types.
@@ -19,6 +20,9 @@ app.get("/api/health", async () => ({
 	ok: true,
 	ts: new Date().toISOString(),
 }));
+
+// Feature modules register their routes as plugins.
+app.register(adminRoutes);
 
 // Top-level await is allowed here because this package is ESM ("type": "module").
 try {

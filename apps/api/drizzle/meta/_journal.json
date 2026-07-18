@@ -15,6 +15,13 @@
       "when": 1784414940599,
       "tag": "0001_graceful_sauron",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784417027874,
+      "tag": "0002_blue_screwball",
+      "breakpoints": true
     }
   ]
 }
