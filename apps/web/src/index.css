@@ -1,0 +1,7 @@
+/* Tailwind v4: one import pulls in the whole framework. Configuration (theme,
+   custom colors) lives in CSS via @theme when we need it — no tailwind.config.js. */
+@import "tailwindcss";
+
+body {
+	margin: 0;
+}

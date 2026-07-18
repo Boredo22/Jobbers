@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+// ---------------------------------------------------------------------------
+// Health — the Phase 0 liveness contract. The API returns this shape and the
+// web app parses responses against it: one schema, both sides of the wire.
+// ---------------------------------------------------------------------------
+export const HealthSchema = z.object({
+	ok: z.boolean(),
+	ts: z.string(), // ISO timestamp
+});
+export type Health = z.infer<typeof HealthSchema>;
+
 /**
  * @jobber/shared — the single source of truth for data shapes.
  *
