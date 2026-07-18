@@ -10,7 +10,11 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD} # read from the root .env file (gitignored)
       POSTGRES_DB: jobber
     ports:
-      - "5432:5432" # expose to the host so tsx/Drizzle can connect from your machine
+      # host 5433 -> container 5432. We avoid host 5432 on purpose: a native
+      # Windows PostgreSQL 16 service already owns IPv4 0.0.0.0:5432, which would
+      # otherwise shadow this container over `localhost`. 5433 keeps the two
+      # Postgres instances cleanly separate.
+      - "5433:5432" # expose to the host so tsx/Drizzle can connect from your machine
     volumes:
       - dbdata:/var/lib/postgresql/data # named volume = data survives `docker compose down`
     healthcheck:
