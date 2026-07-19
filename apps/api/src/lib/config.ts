@@ -59,6 +59,11 @@ const EnvSchema = z.object({
 		.enum(["true", "false"])
 		.default("false")
 		.transform((v) => v === "true"),
+
+	// Port the API listens on. Defaults to 3001 (matches the Vite dev proxy).
+	// z.coerce.number turns the string env value into a number; the default
+	// applies when PORT is unset.
+	PORT: z.coerce.number().int().positive().default(3001),
 });
 
 // `.parse` throws a readable ZodError listing exactly which vars are missing or

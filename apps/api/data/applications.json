@@ -1,0 +1,27 @@
+[
+	{
+		"companyName": "ApartmentIQ",
+		"roleTitle": "AI Solutions Engineer",
+		"channel": "ats",
+		"appliedAt": "2026-05-14",
+		"status": "rejected",
+		"rejectedAt": "2026-06-02",
+		"notes": "EXAMPLE ROW - replace with your real tracker snapshot."
+	},
+	{
+		"companyName": "Example Corp",
+		"roleTitle": "AI Enablement Lead",
+		"channel": "careers_email",
+		"appliedAt": "2026-06-20",
+		"status": "applied",
+		"notes": "EXAMPLE ROW - replace with your real tracker snapshot."
+	},
+	{
+		"companyName": "Placeholder Labs",
+		"roleTitle": "Forward Deployed Engineer",
+		"channel": "referral",
+		"appliedAt": "2026-07-01",
+		"status": "screen",
+		"notes": "EXAMPLE ROW - replace with your real tracker snapshot."
+	}
+]
