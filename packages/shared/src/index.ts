@@ -36,6 +36,30 @@ export const CompanySchema = z.object({
 });
 export type Company = z.infer<typeof CompanySchema>;
 
+// Polling health for the /companies page, derived from the latest poll run:
+// "manual" = no pollable API; "failing" = errored in the last run;
+// "ok" = polled cleanly; "unknown" = never polled yet.
+export const CompanyPollStatusSchema = z.enum([
+	"ok",
+	"failing",
+	"manual",
+	"unknown",
+]);
+export type CompanyPollStatus = z.infer<typeof CompanyPollStatusSchema>;
+
+// One row of the /api/companies list: the company plus computed poll health and
+// a count of its currently-open postings.
+export const CompanyListItemSchema = z.object({
+	id: z.string().uuid(),
+	name: z.string(),
+	atsType: AtsTypeSchema,
+	fitGroup: z.number().int().nullable(),
+	active: z.boolean(),
+	pollStatus: CompanyPollStatusSchema,
+	openJobs: z.number().int(),
+});
+export type CompanyListItem = z.infer<typeof CompanyListItemSchema>;
+
 // ---------------------------------------------------------------------------
 // JobPosting — a single role, deduped by (companyId, externalId).
 // ---------------------------------------------------------------------------

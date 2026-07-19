@@ -1,20 +1,21 @@
-import { Route, Routes } from "react-router-dom";
-import { HealthBadge } from "@/components/HealthBadge";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { Layout } from "@/components/Layout";
+import { CompaniesPage } from "@/pages/CompaniesPage";
+import { JobsPage } from "@/pages/JobsPage";
+import { PipelinePage } from "@/pages/PipelinePage";
 
-function Home() {
-	return (
-		<main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-6 p-8">
-			<h1 className="font-bold text-4xl tracking-tight">Jobber</h1>
-			<p className="text-gray-500">Self-hosted job-search dashboard</p>
-			<HealthBadge />
-		</main>
-	);
-}
-
+// The route table. The parent <Route element={<Layout/>}> renders the sidebar
+// shell; its children render into the <Outlet/> inside Layout. `index` makes
+// "/" redirect to the jobs page — the app's default landing view.
 export default function App() {
 	return (
 		<Routes>
-			<Route path="/" element={<Home />} />
+			<Route element={<Layout />}>
+				<Route index element={<Navigate to="/jobs" replace />} />
+				<Route path="/jobs" element={<JobsPage />} />
+				<Route path="/companies" element={<CompaniesPage />} />
+				<Route path="/pipeline" element={<PipelinePage />} />
+			</Route>
 		</Routes>
 	);
 }

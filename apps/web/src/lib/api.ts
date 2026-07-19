@@ -15,3 +15,24 @@ export async function apiGet<T>(
 	if (!res.ok) throw new Error(`${res.status} ${path}`);
 	return schema.parse(await res.json());
 }
+
+/**
+ * Typed helper for mutations (POST/PATCH/…). Sends `body` as JSON and validates
+ * the response against `schema`, same as apiGet. Used by TanStack Query's
+ * useMutation. Keeping request + response validation in one place means every
+ * network call in the app crosses a Zod boundary (CLAUDE.md §4).
+ */
+export async function apiSend<T>(
+	path: string,
+	method: "POST" | "PATCH" | "PUT" | "DELETE",
+	body: unknown,
+	schema: z.ZodType<T>,
+): Promise<T> {
+	const res = await fetch(path, {
+		method,
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(body),
+	});
+	if (!res.ok) throw new Error(`${res.status} ${path}`);
+	return schema.parse(await res.json());
+}

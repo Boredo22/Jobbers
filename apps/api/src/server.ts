@@ -6,6 +6,7 @@ import {
 } from "fastify-type-provider-zod";
 import { env } from "./lib/config";
 import { adminRoutes } from "./modules/admin/routes";
+import { companiesRoutes } from "./modules/companies/routes";
 import { jobsRoutes } from "./modules/jobs/routes";
 import { schedulerPlugin } from "./modules/poller/scheduler";
 import { trackerRoutes } from "./modules/tracker/routes";
@@ -29,6 +30,7 @@ app.get("/api/health", async () => ({
 app.register(adminRoutes);
 app.register(trackerRoutes);
 app.register(jobsRoutes);
+app.register(companiesRoutes);
 
 // Background jobs are plugins too: this one arms the twice-daily poll cron
 // (a no-op unless POLL_SCHEDULE_ENABLED=true).
