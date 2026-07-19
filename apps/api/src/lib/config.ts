@@ -43,6 +43,22 @@ const EnvSchema = z.object({
 	// The postgres.js connection string, e.g.
 	// postgres://jobber:<password>@localhost:5432/jobber
 	DATABASE_URL: z.string().url(),
+
+	// ntfy topic URL for push notifications (step 1.5), e.g.
+	// https://ntfy.sh/jobber-<random>. Optional: leave it unset and notify()
+	// becomes a no-op, so the poller runs fine on a machine with no phone
+	// attached. When set it must be a real URL (validated, not silently ignored).
+	NTFY_URL: z.string().url().optional(),
+
+	// Whether the in-process cron scheduler arms itself on boot (step 1.5).
+	// Off by default so `tsx watch` restarts and one-off scripts don't quietly
+	// start firing polls; the deployed container sets it to "true".
+	// z.coerce.boolean is intentionally NOT used — it treats any non-empty
+	// string (including "false") as true — so we match the literal "true".
+	POLL_SCHEDULE_ENABLED: z
+		.enum(["true", "false"])
+		.default("false")
+		.transform((v) => v === "true"),
 });
 
 // `.parse` throws a readable ZodError listing exactly which vars are missing or

@@ -5,6 +5,7 @@ import {
 	type ZodTypeProvider,
 } from "fastify-type-provider-zod";
 import { adminRoutes } from "./modules/admin/routes";
+import { schedulerPlugin } from "./modules/poller/scheduler";
 
 // `.withTypeProvider<ZodTypeProvider>()` rewires Fastify so that any Zod schema
 // we attach to a route drives BOTH runtime validation and the handler's types.
@@ -23,6 +24,10 @@ app.get("/api/health", async () => ({
 
 // Feature modules register their routes as plugins.
 app.register(adminRoutes);
+
+// Background jobs are plugins too: this one arms the twice-daily poll cron
+// (a no-op unless POLL_SCHEDULE_ENABLED=true).
+app.register(schedulerPlugin);
 
 // Top-level await is allowed here because this package is ESM ("type": "module").
 try {

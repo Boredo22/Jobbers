@@ -2,6 +2,7 @@ import { and, eq, lt, ne, sql } from "drizzle-orm";
 import pLimit from "p-limit";
 import { db } from "../../db/client";
 import { companies, jobPostings, pollRuns } from "../../db/schema";
+import { notify } from "../../lib/notify";
 import { adapters } from "./index";
 import { isCandidate } from "./prefilter";
 
@@ -179,8 +180,7 @@ export async function runPoll(): Promise<PollSummary> {
 
 	const finishedAt = new Date();
 
-	// The audit row. (Notify + enqueue-for-scoring on `candidates` land in steps
-	// 1.5 and 2.4 respectively.)
+	// The audit row. (Enqueue-for-scoring on `candidates` lands in step 2.4.)
 	await db.insert(pollRuns).values({
 		startedAt,
 		finishedAt,
@@ -190,6 +190,28 @@ export async function runPoll(): Promise<PollSummary> {
 		candidateCount: candidates.length,
 		failures,
 	});
+
+	// Push notification (step 1.5). Only worth a buzz when the poll surfaced new
+	// candidate postings — the whole point of the twice-daily schedule is to
+	// learn about those without opening the dashboard. notify() no-ops when ntfy
+	// is unconfigured and never throws, so this can't affect the run's outcome.
+	if (candidates.length > 0) {
+		const PREVIEW = 5;
+		const lines = candidates
+			.slice(0, PREVIEW)
+			.map((c) => `${c.company} — ${c.title}`);
+		if (candidates.length > PREVIEW) {
+			lines.push(`…and ${candidates.length - PREVIEW} more`);
+		}
+		await notify({
+			title: `${candidates.length} new job candidate${candidates.length === 1 ? "" : "s"}`,
+			message: lines.join("\n"),
+			priority: "default",
+			tags: ["briefcase"],
+			// Tap-through only makes sense for a single hit; a list has no one URL.
+			click: candidates.length === 1 ? candidates[0]?.url : undefined,
+		});
+	}
 
 	return {
 		startedAt: startedAt.toISOString(),
