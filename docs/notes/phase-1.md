@@ -5,8 +5,8 @@
 > it appears, and the "why" matters as much as the "how". By the end you should
 > be able to re-implement the poller and defend every line in an interview.
 >
-> (Steps 1.5–1.7 — scheduling/ntfy, tracker import, and the first UI — are not
-> built yet; they get their own notes later.)
+> (Steps 1.5–1.7 — scheduling/ntfy, tracker import, and the first UI — get their
+> own per-step notes as they're built: see `step-1.5.md`, `step-1.6.md`, …)
 
 **Deliverable so far:** a command (`POST /api/admin/poll`) that fetches ~68 real
 job boards, stores every posting in Postgres without ever creating a duplicate,
