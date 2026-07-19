@@ -1,27 +1,278 @@
 [
 	{
-		"companyName": "ApartmentIQ",
-		"roleTitle": "AI Solutions Engineer",
-		"channel": "ats",
-		"appliedAt": "2026-05-14",
-		"status": "rejected",
-		"rejectedAt": "2026-06-02",
-		"notes": "EXAMPLE ROW - replace with your real tracker snapshot."
-	},
-	{
-		"companyName": "Example Corp",
+		"companyName": "IMA Financial Group",
 		"roleTitle": "AI Enablement Lead",
-		"channel": "careers_email",
-		"appliedAt": "2026-06-20",
-		"status": "applied",
-		"notes": "EXAMPLE ROW - replace with your real tracker snapshot."
+		"channel": "other",
+		"appliedAt": "2026-07-16",
+		"status": "applied"
 	},
 	{
-		"companyName": "Placeholder Labs",
-		"roleTitle": "Forward Deployed Engineer",
-		"channel": "referral",
-		"appliedAt": "2026-07-01",
-		"status": "screen",
-		"notes": "EXAMPLE ROW - replace with your real tracker snapshot."
+		"companyName": "Bonzi Studio",
+		"roleTitle": "Software Developer Intern",
+		"channel": "other",
+		"appliedAt": "2026-07-16",
+		"status": "applied"
+	},
+	{
+		"companyName": "Ursa Space Systems",
+		"roleTitle": "Jr. AI Engineer",
+		"channel": "other",
+		"appliedAt": "2026-07-16",
+		"status": "applied"
+	},
+	{
+		"companyName": "Mercor",
+		"roleTitle": "Software Engineer - Backend Specialist",
+		"channel": "other",
+		"appliedAt": "2026-07-16",
+		"status": "applied"
+	},
+	{
+		"companyName": "Urrly",
+		"roleTitle": "Full-Stack Software Engineer (AI-Assisted Development, Remote)",
+		"channel": "other",
+		"appliedAt": "2026-07-16",
+		"status": "applied"
+	},
+	{
+		"companyName": "Commerce Architects",
+		"roleTitle": "Software Engineer (1-3 Years Experience)",
+		"channel": "other",
+		"appliedAt": "2026-07-16",
+		"status": "applied"
+	},
+	{
+		"companyName": "Waymark",
+		"roleTitle": "Junior Software Engineer",
+		"channel": "other",
+		"appliedAt": "2026-07-16",
+		"status": "applied"
+	},
+	{
+		"companyName": "AcuityMD",
+		"roleTitle": "Unspecified Role",
+		"channel": "other",
+		"appliedAt": "2026-07-16",
+		"status": "applied",
+		"notes": "Fill in role title (check job board 'applied' tab / browser history)"
+	},
+	{
+		"companyName": "Kani Solutions",
+		"roleTitle": "Business Analyst & Scrum Master (Career Transition, Remote)",
+		"channel": "other",
+		"appliedAt": "2026-07-16",
+		"status": "applied"
+	},
+	{
+		"companyName": "Elite Technical",
+		"roleTitle": "AI Business Systems Analyst (Jr to Mid)",
+		"channel": "other",
+		"appliedAt": "2026-07-16",
+		"status": "applied"
+	},
+	{
+		"companyName": "Next Step Systems",
+		"roleTitle": "Applied AI Engineer",
+		"channel": "other",
+		"appliedAt": "2026-07-15",
+		"status": "applied"
+	},
+	{
+		"companyName": "Paramount Software Solutions, Inc",
+		"roleTitle": "AI Engineer Remote",
+		"channel": "other",
+		"appliedAt": "2026-07-15",
+		"status": "applied"
+	},
+	{
+		"companyName": "Bright Power",
+		"roleTitle": "Associate Product Manager",
+		"channel": "other",
+		"appliedAt": "2026-07-15",
+		"status": "applied"
+	},
+	{
+		"companyName": "Pax8",
+		"roleTitle": "Unspecified Role",
+		"channel": "other",
+		"appliedAt": "2026-07-15",
+		"status": "applied",
+		"notes": "Fill in role title (check job board 'applied' tab / browser history)"
+	},
+	{
+		"companyName": "Paradigm",
+		"roleTitle": "Product Manager",
+		"channel": "other",
+		"appliedAt": "2026-07-14",
+		"status": "applied"
+	},
+	{
+		"companyName": "CodePath",
+		"roleTitle": "Unspecified Role",
+		"channel": "other",
+		"appliedAt": "2026-07-14",
+		"status": "applied",
+		"notes": "Fill in role title (check job board 'applied' tab / browser history)"
+	},
+	{
+		"companyName": "Nightingale Education Group",
+		"roleTitle": "Business Analyst III, Operational Excellence",
+		"channel": "other",
+		"appliedAt": "2026-07-14",
+		"status": "applied"
+	},
+	{
+		"companyName": "Hello Patient",
+		"roleTitle": "AI Agent Product Manager",
+		"channel": "other",
+		"appliedAt": "2026-07-14",
+		"status": "applied"
+	},
+	{
+		"companyName": "BMR Infotek",
+		"roleTitle": "Data Scientist - AI",
+		"channel": "other",
+		"appliedAt": "2026-07-14",
+		"status": "applied"
+	},
+	{
+		"companyName": "Woven by Toyota",
+		"roleTitle": "AI Associate",
+		"channel": "other",
+		"appliedAt": "2026-07-14",
+		"status": "applied"
+	},
+	{
+		"companyName": "ShopMy",
+		"roleTitle": "Unspecified Role",
+		"channel": "other",
+		"appliedAt": "2026-07-13",
+		"status": "applied",
+		"notes": "Fill in role title (check job board 'applied' tab / browser history)"
+	},
+	{
+		"companyName": "EnerSys",
+		"roleTitle": "Senior Finance AI & Automation Developer",
+		"channel": "other",
+		"appliedAt": "2026-07-12",
+		"status": "applied"
+	},
+	{
+		"companyName": "Coretek Services",
+		"roleTitle": "Business Analyst - Data & AI Practice",
+		"channel": "other",
+		"appliedAt": "2026-07-12",
+		"status": "applied"
+	},
+	{
+		"companyName": "Amazon",
+		"roleTitle": "AI Strategic Business Development, Customer Experience",
+		"channel": "other",
+		"appliedAt": "2026-07-12",
+		"status": "applied"
+	},
+	{
+		"companyName": "HSI",
+		"roleTitle": "AI Product Manager I",
+		"channel": "other",
+		"appliedAt": "2026-07-12",
+		"status": "applied"
+	},
+	{
+		"companyName": "Bitovi",
+		"roleTitle": "Business Systems Analyst - AI Automation",
+		"channel": "other",
+		"appliedAt": "2026-07-12",
+		"status": "applied"
+	},
+	{
+		"companyName": "Salted",
+		"roleTitle": "Unspecified Role",
+		"channel": "other",
+		"appliedAt": "2026-07-12",
+		"status": "applied",
+		"notes": "Fill in role title (check job board 'applied' tab / browser history)"
+	},
+	{
+		"companyName": "Cyclotron, Inc.",
+		"roleTitle": "Unspecified Role",
+		"channel": "other",
+		"appliedAt": "2026-07-12",
+		"status": "applied",
+		"notes": "Fill in role title (check job board 'applied' tab / browser history)"
+	},
+	{
+		"companyName": "Precision AQ",
+		"roleTitle": "AI Enablement Manager",
+		"channel": "other",
+		"appliedAt": "2026-07-11",
+		"status": "applied"
+	},
+	{
+		"companyName": "Honor",
+		"roleTitle": "Senior Engineer - Applied AI",
+		"channel": "other",
+		"appliedAt": "2026-07-11",
+		"status": "applied"
+	},
+	{
+		"companyName": "Netskope",
+		"roleTitle": "Unspecified Role",
+		"channel": "other",
+		"appliedAt": "2026-07-11",
+		"status": "applied",
+		"notes": "Fill in role title (check job board 'applied' tab / browser history)"
+	},
+	{
+		"companyName": "Acquia",
+		"roleTitle": "Senior Product Manager",
+		"channel": "other",
+		"appliedAt": "2026-07-11",
+		"status": "applied"
+	},
+	{
+		"companyName": "TechnologyAdvice",
+		"roleTitle": "Unspecified Role",
+		"channel": "other",
+		"appliedAt": "2026-07-11",
+		"status": "applied",
+		"notes": "Fill in role title (check job board 'applied' tab / browser history)"
+	},
+	{
+		"companyName": "Civitas Learning",
+		"roleTitle": "Senior Product Manager",
+		"channel": "other",
+		"appliedAt": "2026-07-11",
+		"status": "applied"
+	},
+	{
+		"companyName": "Roo",
+		"roleTitle": "Unspecified Role",
+		"channel": "other",
+		"appliedAt": "2026-07-11",
+		"status": "applied",
+		"notes": "Fill in role title (check job board 'applied' tab / browser history)"
+	},
+	{
+		"companyName": "ApartmentIQ",
+		"roleTitle": "AI Operations Lead",
+		"channel": "other",
+		"appliedAt": "2026-07-11",
+		"status": "rejected",
+		"rejectedAt": "2026-07-16"
+	},
+	{
+		"companyName": "Affirm",
+		"roleTitle": "AI Solutions Engineer",
+		"channel": "other",
+		"appliedAt": "2026-07-11",
+		"status": "applied"
+	},
+	{
+		"companyName": "ShipMonk",
+		"roleTitle": "Program Manager, AI Enablement",
+		"channel": "other",
+		"appliedAt": "2026-07-11",
+		"status": "applied"
 	}
 ]

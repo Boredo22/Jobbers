@@ -362,19 +362,37 @@ What's specific to it:
   `"rejection"` event too. All inside a per-row transaction, so a row and its
   events are all-or-nothing.
 
-### 6.6a Important: the shipped data is EXAMPLES
+### 6.6a The real data (loaded from the xlsx)
 
-`data/applications.json` currently holds **three obviously-fake placeholder rows**
-(ApartmentIQ, "Example Corp", "Placeholder Labs"). Your real 38-row tracker
-snapshot wasn't in the repo, so the code is real and tested but the data is a
-stand-in. To load your real pipeline:
+`data/applications.json` now holds your **real 38 applications**, generated
+directly from `Downloads/Job_Applications_Tracker.xlsx` (the Yahoo-inbox scan) so
+there were no hand-transcription errors. Two things worth noting about that
+conversion:
 
-1. Replace the file's contents with your real rows (same shape: `companyName`,
-   `roleTitle`, `channel`, `appliedAt`, optional `status`, `rejectedAt`, `notes`).
-2. Because the example rows are already in the DB, clear the table first so you
-   don't mix them in:
-   `docker exec <db> psql -U jobber -d jobber -c "truncate application_events, applications;"`
-3. `pnpm --filter api import:applications`.
+- **The `channel` column was empty in the spreadsheet.** Rather than fabricate a
+  value ("everyone applied via ATS"), we added an `"other"` catch-all to the
+  channel enum (in both `schema.ts` and `@jobber/shared`). Because the DB column
+  is `text` with a *TypeScript-only* enum — not a Postgres `ENUM` type or a CHECK
+  constraint — adding a value is a pure code change with **no migration**. That's
+  a concrete payoff of the "enum in TS, plain text in the DB" decision from step
+  1.1. Honest data beats a tidy-looking guess.
+- **Zero of the 38 linked to a seeded company.** The companies you *applied to*
+  (IMA, Amazon, Affirm, …) are a different set from the 68 AI-enablement targets
+  the *poller* watches (Snorkel, Databricks, …), so every row kept `companyId =
+  null`. That's the snapshot-columns design earning its keep: the rows are fully
+  readable without a link.
+
+To reload from scratch (e.g. after editing the xlsx): truncate first so you don't
+double up (no unique key to dedupe on cross-wipe), then re-import:
+
+```bash
+docker exec <db> psql -U jobber -d jobber -c "truncate application_events, applications;"
+pnpm --filter api import:applications
+```
+
+The `Unspecified Role` rows carry a note to fill in the real title (the scan
+couldn't recover it from the confirmation email) — do that in the pipeline UI
+once step 1.7 lands.
 
 ---
 

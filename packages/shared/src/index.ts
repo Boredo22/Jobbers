@@ -106,6 +106,7 @@ export const ApplicationChannelSchema = z.enum([
 	"hn",
 	"wellfound",
 	"referral",
+	"other", // catch-all: job board / unknown channel (e.g. imported tracker rows)
 ]);
 export type ApplicationChannel = z.infer<typeof ApplicationChannelSchema>;
 

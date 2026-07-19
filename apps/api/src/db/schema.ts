@@ -145,7 +145,7 @@ export const applications = pgTable("applications", {
 	companyName: text("company_name").notNull(),
 	roleTitle: text("role_title").notNull(),
 	channel: text("channel", {
-		enum: ["ats", "careers_email", "hn", "wellfound", "referral"],
+		enum: ["ats", "careers_email", "hn", "wellfound", "referral", "other"],
 	}).notNull(),
 	appliedAt: timestamp("applied_at", { withTimezone: true })
 		.notNull()
