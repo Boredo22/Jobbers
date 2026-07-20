@@ -6,9 +6,14 @@ import {
 	type ProfileCriterion,
 	type ProfileVersion,
 } from "@jobber/shared";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { db } from "../../db/client";
-import { applications, profileVersions, resumeVersions } from "../../db/schema";
+import {
+	applications,
+	profiles,
+	profileVersions,
+	resumeVersions,
+} from "../../db/schema";
 import { createProvider, logAiRun } from "../../lib/ai";
 
 // ---------------------------------------------------------------------------
@@ -21,6 +26,44 @@ import { createProvider, logAiRun } from "../../lib/ai";
 // ---------------------------------------------------------------------------
 
 const RESUME_FALLBACK = "(No resume on file yet — Phase 3.2 adds upload.)";
+
+// The track a fresh DB gets when nothing exists yet — same name the backfill
+// script (backfill-profiles.ts) uses, so the two paths converge on one row.
+const DEFAULT_TRACK_NAME = "AI Implementation";
+
+/**
+ * The track (profiles row) that new profile versions and scores attach to,
+ * until multi-profile stage 2 makes callers track-aware. Oldest active track
+ * wins; if the table is somehow empty (fresh DB, backfill never run), it
+ * creates the default track rather than writing another orphan row — the
+ * whole point is that nothing inserted after the multi-profile migration has
+ * profile_id = null.
+ */
+export async function defaultTrackId(): Promise<string> {
+	const [track] = await db
+		.select({ id: profiles.id })
+		.from(profiles)
+		.orderBy(desc(profiles.active), profiles.createdAt)
+		.limit(1);
+	if (track) return track.id;
+
+	// Empty table: create the default. onConflictDoNothing + re-select makes a
+	// concurrent first-write race resolve to the same row instead of throwing
+	// on the unique name.
+	const [created] = await db
+		.insert(profiles)
+		.values({ name: DEFAULT_TRACK_NAME, active: true })
+		.onConflictDoNothing({ target: profiles.name })
+		.returning({ id: profiles.id });
+	if (created) return created.id;
+	const [existing] = await db
+		.select({ id: profiles.id })
+		.from(profiles)
+		.where(eq(profiles.name, DEFAULT_TRACK_NAME))
+		.limit(1);
+	if (!existing) throw new Error("defaultTrackId: could not resolve a track");
+	return existing.id;
+}
 
 /** A compact summary of recent applications — revealed preference for the AI. */
 async function applicationsSummary(): Promise<string> {
@@ -128,14 +171,18 @@ export async function getActiveCompCeiling(): Promise<number | null> {
 }
 
 /**
- * Save a profile as a NEW version and make it the active one. Versions are
- * append-only (like prompts): editing produces v(N+1), old scores keep pointing
- * at the version that graded them. Deactivate-others + insert-active runs in one
- * transaction so there's never zero or two active profiles.
+ * Save a profile as a NEW version and make it the active one *within its
+ * track*. Versions are append-only (like prompts): editing produces v(N+1),
+ * old scores keep pointing at the version that graded them. Deactivate-others
+ * + insert-active runs in one transaction so there's never zero or two active
+ * profiles per track. The deactivate is scoped to the track (plus any stray
+ * null-track rows) so that when a second track exists, saving one can't
+ * clobber the other's active version.
  */
 export async function saveProfile(
 	profile: IdealJobProfile,
 ): Promise<ProfileVersion> {
+	const trackId = await defaultTrackId();
 	return db.transaction(async (tx) => {
 		const maxRows = await tx
 			.select({
@@ -147,11 +194,20 @@ export async function saveProfile(
 		await tx
 			.update(profileVersions)
 			.set({ active: false })
-			.where(eq(profileVersions.active, true));
+			.where(
+				and(
+					eq(profileVersions.active, true),
+					or(
+						eq(profileVersions.profileId, trackId),
+						isNull(profileVersions.profileId),
+					),
+				),
+			);
 
 		const [row] = await tx
 			.insert(profileVersions)
 			.values({
+				profileId: trackId,
 				version: max + 1,
 				northStar: profile.northStar,
 				rubric: {

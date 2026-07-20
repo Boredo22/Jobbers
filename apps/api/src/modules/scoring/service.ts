@@ -1,6 +1,6 @@
 import { promptVersion, renderPrompt, SCORE_JOB_PROMPT } from "@jobber/ai";
 import { FitScoreSchema, type ScoreVerdict } from "@jobber/shared";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import { db } from "../../db/client";
 import {
 	companies,
@@ -11,6 +11,7 @@ import {
 } from "../../db/schema";
 import { createProvider, logAiRun } from "../../lib/ai";
 import { notify } from "../../lib/notify";
+import { defaultTrackId } from "../profile/service";
 
 // ---------------------------------------------------------------------------
 // scoring/service.ts — turn one posting into one scored fit_scores row.
@@ -45,14 +46,26 @@ async function activeResumeText(): Promise<string> {
 }
 
 /**
- * The active profile version rendered to prose for the prompt, plus its id so the
- * score records which profile graded it (null when no profile exists yet).
+ * The given track's active profile version rendered to prose for the prompt,
+ * plus its id so the score records which profile graded it (null when no
+ * profile exists yet). Scoped to the track (stray null-track rows included)
+ * so a second track's active version can never be picked up by accident.
  */
-async function activeProfile(): Promise<{ text: string; id: string | null }> {
+async function activeProfile(
+	trackId: string,
+): Promise<{ text: string; id: string | null }> {
 	const [row] = await db
 		.select()
 		.from(profileVersions)
-		.where(eq(profileVersions.active, true))
+		.where(
+			and(
+				eq(profileVersions.active, true),
+				or(
+					eq(profileVersions.profileId, trackId),
+					isNull(profileVersions.profileId),
+				),
+			),
+		)
 		.limit(1);
 	if (!row) return { text: PROFILE_FALLBACK, id: null };
 
@@ -141,9 +154,13 @@ export async function scorePosting(jobPostingId: string): Promise<ScoreResult> {
 	if (!posting)
 		throw new Error(`scorePosting: posting ${jobPostingId} not found`);
 
+	// Resolve the track first: it scopes which profile version grades this
+	// posting, and it's stamped on the score row (fit_scores.profileId) so
+	// triage can filter by track in stage 2 without a join.
+	const trackId = await defaultTrackId();
 	const [resume, profile] = await Promise.all([
 		activeResumeText(),
-		activeProfile(),
+		activeProfile(trackId),
 	]);
 
 	const prompt = renderPrompt(SCORE_JOB_PROMPT, {
@@ -171,6 +188,9 @@ export async function scorePosting(jobPostingId: string): Promise<ScoreResult> {
 		.values({
 			jobPostingId: posting.id,
 			profileVersionId: profile.id,
+			// Set even when profileVersionId is null (resume-only grade): the score
+			// still belongs to the track whose lens it was scored under.
+			profileId: trackId,
 			score: fit.score,
 			matchPoints: fit.matchPoints,
 			gaps: fit.gaps,

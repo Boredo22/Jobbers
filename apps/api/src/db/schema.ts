@@ -68,7 +68,9 @@ export const profiles = pgTable("profiles", {
 	name: text("name").notNull().unique(),
 	// The resume this track tailors/scores against (its own, per the design).
 	// Nullable → falls back to the globally-active resume when unset.
-	resumeVersionId: uuid("resume_version_id").references(() => resumeVersions.id),
+	resumeVersionId: uuid("resume_version_id").references(
+		() => resumeVersions.id,
+	),
 	// Whether this track is scored. Multiple active tracks = multi-lens scoring.
 	active: boolean("active").notNull().default(true),
 	createdAt: timestamp("created_at", { withTimezone: true })
