@@ -169,6 +169,39 @@ export const ScoreFeedbackSchema = z.object({
 });
 export type ScoreFeedback = z.infer<typeof ScoreFeedbackSchema>;
 
+// One row of the /api/triage list: a fit score joined with its posting and
+// company. This is the shape the triage page renders — a scored posting worth
+// reviewing (open, not yet applied, not dismissed), sorted best-first by the API.
+export const TriageItemSchema = z.object({
+	scoreId: z.string().uuid(),
+	jobPostingId: z.string().uuid(),
+	companyId: z.string().uuid(),
+	companyName: z.string(),
+	title: z.string(),
+	url: z.string().url(),
+	location: z.string().nullable(),
+	remote: z.boolean().nullable(),
+	compMin: z.number().int().nullable(),
+	compMax: z.number().int().nullable(),
+	score: z.number(),
+	matchPoints: z.array(z.string()),
+	gaps: z.array(z.string()),
+	credentialGapFlag: z.boolean(),
+	rationale: z.string(),
+	feedback: ScoreVerdictSchema.nullable(),
+	createdAt: z.coerce.date(),
+});
+export type TriageItem = z.infer<typeof TriageItemSchema>;
+
+// GET /api/stats/ai-spend — the running cost story, summed for the current month
+// from ai_runs. Rendered as a small stat on the triage page (step 2.5).
+export const AiSpendSchema = z.object({
+	month: z.string(), // "YYYY-MM"
+	totalUsd: z.number(),
+	runs: z.number().int(),
+});
+export type AiSpend = z.infer<typeof AiSpendSchema>;
+
 // ---------------------------------------------------------------------------
 // Application — your pipeline. The event log is the truth; `status` is a fast
 // denormalized mirror of it (see the tracker module + docs/notes/step-1.6.md).

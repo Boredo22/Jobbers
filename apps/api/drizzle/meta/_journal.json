@@ -29,6 +29,13 @@
       "when": 1784560631984,
       "tag": "0003_cooing_cassandra_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784561367200,
+      "tag": "0004_sticky_photon",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import { Layout } from "@/components/Layout";
 import { CompaniesPage } from "@/pages/CompaniesPage";
 import { JobsPage } from "@/pages/JobsPage";
 import { PipelinePage } from "@/pages/PipelinePage";
+import { TriagePage } from "@/pages/TriagePage";
 
 // The route table. The parent <Route element={<Layout/>}> renders the sidebar
 // shell; its children render into the <Outlet/> inside Layout. `index` makes
@@ -11,7 +12,8 @@ export default function App() {
 	return (
 		<Routes>
 			<Route element={<Layout />}>
-				<Route index element={<Navigate to="/jobs" replace />} />
+				<Route index element={<Navigate to="/triage" replace />} />
+				<Route path="/triage" element={<TriagePage />} />
 				<Route path="/jobs" element={<JobsPage />} />
 				<Route path="/companies" element={<CompaniesPage />} />
 				<Route path="/pipeline" element={<PipelinePage />} />

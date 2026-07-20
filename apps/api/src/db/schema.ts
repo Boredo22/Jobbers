@@ -135,6 +135,9 @@ export const fitScores = pgTable("fit_scores", {
 	// Phase 3. Nullable: most scores never get explicit feedback.
 	feedback: text("feedback", { enum: ["up", "down"] }),
 	feedbackNote: text("feedback_note"),
+	// Dismissed from the triage queue (not interested). Hides it from /triage
+	// without deleting the score or its cost history (step 2.5).
+	dismissed: boolean("dismissed").notNull().default(false),
 	createdAt: timestamp("created_at", { withTimezone: true })
 		.notNull()
 		.defaultNow(),

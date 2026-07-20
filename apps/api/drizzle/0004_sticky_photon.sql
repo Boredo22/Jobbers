@@ -1,0 +1,1 @@
+ALTER TABLE "fit_scores" ADD COLUMN "dismissed" boolean DEFAULT false NOT NULL;

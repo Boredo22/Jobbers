@@ -39,13 +39,13 @@ insert fit_scores row (score, model, prompt version)   ← step 2.4
 | 2.1 | `packages/ai` scaffold + provider **interface** | `provider.ts` (`AIProvider`, `AIRequest`, `AIResult`, `ModelTier`) | ✅ built — see [step-2.1.md](step-2.1.md) |
 | 2.2 | `ApiProvider` (Mode A) — forced structured output | `providers/api.ts`, `models.ts`, shared `FitScoreSchema`, api `lib/ai.ts`, `ai_runs` ledger | ✅ built — see [step-2.2.md](step-2.2.md) |
 | 2.3 | Prompts as **versioned files** + first unit test | `prompts/score-job.v1.md`, `prompts.ts`, `prompts.test.ts` (Vitest) | ✅ built — see [step-2.3.md](step-2.3.md) |
-| 2.4 | Scoring pipeline + feedback (queue, worker, ntfy) | `modules/scoring/*`, `scoring_queue` table, `POST /api/scores/:id/feedback` | ⏳ next |
-| 2.5 | Triage page (sorted cards, 👍/👎, AI-spend stat) | `/triage` route in `apps/web` | ⏳ upcoming |
+| 2.4 | Scoring pipeline + feedback (queue, worker, ntfy) | `modules/scoring/*`, `scoring_queue` table, `POST /api/scores/:id/feedback` | ✅ built — see [step-2.4.md](step-2.4.md) |
+| 2.5 | Triage page (sorted cards, 👍/👎, AI-spend stat) | `/triage` route, `modules/scoring/triage.ts` | ✅ built — see [step-2.5.md](step-2.5.md) |
 
 Steps 2.1–2.3 are the **foundation**: a swappable AI abstraction, one concrete
 backend that guarantees schema-shaped output, and a versioned prompt. Steps 2.4–2.5
 are the **payoff**: wiring that foundation into the poller and surfacing scores in
-the UI.
+the UI. **All five are built.**
 
 ---
 
@@ -95,27 +95,41 @@ These are the ideas Phase 2 keeps leaning on — worth being able to state cold:
 
 ---
 
-## What Jobber can do now (end of 2.3)
+## Phase 2 — complete ✅
 
-Run `pnpm --filter api score:one` (with an `ANTHROPIC_API_KEY` set) and Jobber will
-take a real job description + a candidate profile/resume, render the versioned
-scoring prompt, force a live model to return a calibrated `FitScore`, validate it,
-print it, and record the call's cost in `ai_runs`. The abstraction, the reliable
-structured-output path, the cost ledger, and the versioned prompt are all in place
-and unit-tested where it pays (prompt rendering). What's missing is the *automation*
-— scoring every new candidate the poller finds, and showing the results — which is
-exactly steps 2.4 and 2.5.
+End to end, twice a day Jobber now: polls ~68 boards → flags candidates →
+**enqueues them for scoring** → an in-process worker (or the `score:drain` script)
+sends each to a model, gets a calibrated `FitScore`, writes it, and logs the cost →
+pushes your phone for anything ≥ 8 → and surfaces the lot on a `/triage` page where
+you open / apply / dismiss / 👍👎, with the month's AI spend staring back at you.
 
----
+| Step | What | Note |
+|---|---|---|
+| 2.1 | Provider interface | [step-2.1.md](step-2.1.md) |
+| 2.2 | ApiProvider (Mode A) — forced structured output | [step-2.2.md](step-2.2.md) |
+| 2.3 | Versioned prompt files + first unit test | [step-2.3.md](step-2.3.md) |
+| 2.4 | Scoring pipeline: queue, worker, feedback, ntfy | [step-2.4.md](step-2.4.md) |
+| 2.5 | Triage page + AI-spend stat | [step-2.5.md](step-2.5.md) |
 
-## What's next
+**The through-lines worth remembering from Phase 2:**
+- *Dependency inversion* — a pure `@jobber/ai` library behind one interface; the
+  app supplies env, DB, and cost table. Three backends, zero caller changes.
+- *Validate at every edge, including the model* — forced tool use + `safeParse` +
+  one retry; an LLM that returns the wrong shape is a caught error, not a bad row.
+- *Push volatile facts to one edge* — model IDs/prices, env, the prompt text each
+  live in exactly one file.
+- *Filter where the data is* — the triage anti-join does its selection in SQL so
+  the page just renders; the cost ledger sums in the database.
+- *Every call is metered* — `ai_runs` turns "I used an LLM" into "here's the
+  receipt, to the cent," visible daily.
 
-- **Step 2.4** wires the foundation into the poller: a `scorePosting(id)` that
-  assembles the *active* resume + *active* profile version, a `scoring_queue` table
-  drained by an in-process `setInterval` worker, ntfy firing for scores ≥ 8, and a
-  feedback endpoint. Needs a small Drizzle migration (`scoring_queue` table,
-  `prompt_version` column on `fit_scores`).
-- **Step 2.5** adds the `/triage` page and the visible "AI spend this month" stat —
-  the portfolio-demo moment. **Phase 2 done.**
+**One bug this phase is worth remembering:** the ledger silently stored `NULL`
+`est_cost` because we price by alias (`claude-haiku-4-5`) but the API reports a
+dated snapshot (`claude-haiku-4-5-20251001`). Prefix-matching fixed it, and a unit
+test pins it. It only surfaced because we ran the *real* API — the server rewrote
+our model string in a way no unit test of our own code would have shown.
 
-This note gets a closing "Phase 2 complete" section once 2.5 lands.
+**What's next — Phase 3:** fill the two placeholders the scorer falls back on today
+— the **Ideal Job Profile** (3.1) and **resume versions** (3.2) — then the alternate
+**CLI and Cowork providers** (3.3) so the same scoring runs with no API key or
+per-call billing. The `{{profile}}`/`{{resume}}` slots are already waiting for them.

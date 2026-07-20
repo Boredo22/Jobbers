@@ -1,14 +1,22 @@
-import { ScoreFeedbackSchema } from "@jobber/shared";
+import {
+	AiSpendSchema,
+	ScoreFeedbackSchema,
+	TriageItemSchema,
+} from "@jobber/shared";
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { enqueueOpenCandidates, processQueueOnce } from "./queue";
 import { recordFeedback } from "./service";
+import { aiSpendThisMonth, dismissScore, listTriage } from "./triage";
 
 // ---------------------------------------------------------------------------
 // scoring/routes.ts — the scoring API (a Fastify plugin, thin like the others).
 //
+//   • GET  /api/triage — score-sorted postings worth reviewing (step 2.5).
+//   • GET  /api/stats/ai-spend — this month's AI cost from the ledger.
 //   • POST /api/scores/:id/feedback — your 👍/👎 on a score (feeds Phase 3).
+//   • POST /api/scores/:id/dismiss — hide a score from triage.
 //   • POST /api/admin/score-candidates — enqueue N open candidates for scoring.
 //   • POST /api/admin/score-drain — score one batch now (manual worker tick).
 //
@@ -17,6 +25,39 @@ import { recordFeedback } from "./service";
 // ---------------------------------------------------------------------------
 export async function scoringRoutes(app: FastifyInstance): Promise<void> {
 	const r = app.withTypeProvider<ZodTypeProvider>();
+
+	// GET /api/triage — the review queue: best-first scored postings.
+	r.get(
+		"/api/triage",
+		{ schema: { response: { 200: z.array(TriageItemSchema) } } },
+		async () => listTriage(),
+	);
+
+	// GET /api/stats/ai-spend — the cost-awareness stat shown on the triage page.
+	r.get(
+		"/api/stats/ai-spend",
+		{ schema: { response: { 200: AiSpendSchema } } },
+		async () => aiSpendThisMonth(),
+	);
+
+	// POST /api/scores/:id/dismiss — remove a score from triage (not interested).
+	r.post(
+		"/api/scores/:id/dismiss",
+		{
+			schema: {
+				params: z.object({ id: z.string().uuid() }),
+				response: {
+					200: z.object({ ok: z.literal(true) }),
+					404: z.object({ message: z.string() }),
+				},
+			},
+		},
+		async (req, reply) => {
+			const ok = await dismissScore(req.params.id);
+			if (!ok) return reply.code(404).send({ message: "score not found" });
+			return { ok: true as const };
+		},
+	);
 
 	// Record feedback on a score. 404 if the score id is unknown.
 	r.post(

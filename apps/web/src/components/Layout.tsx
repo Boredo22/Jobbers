@@ -5,6 +5,7 @@ import { HealthBadge } from "./HealthBadge";
 // The nav items, data-driven so the markup is a single map instead of repeated
 // JSX. Add a page here + a <Route> in App.tsx and it appears in the sidebar.
 const NAV = [
+	{ to: "/triage", label: "Triage" },
 	{ to: "/jobs", label: "Jobs" },
 	{ to: "/companies", label: "Companies" },
 	{ to: "/pipeline", label: "Pipeline" },
