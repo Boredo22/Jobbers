@@ -1,0 +1,13 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		// Content scripts live in a real page, so the DOM lib is in play here
+		// (the api never needs it). ESNext+bundler matches how esbuild resolves.
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		// The chrome.* extension APIs (typed by @types/chrome).
+		"types": ["chrome"]
+	},
+	"include": ["src"]
+}

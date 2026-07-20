@@ -62,7 +62,12 @@ export function createProvider(): AIProvider {
 }
 
 /** Which product feature made the call — matches the ai_runs.feature enum. */
-type AiFeature = "score" | "resume_review" | "profile" | "tailor";
+type AiFeature =
+	| "score"
+	| "resume_review"
+	| "profile"
+	| "tailor"
+	| "cover_letter";
 
 /**
  * Record one AI call in the ai_runs cost/audit ledger. The provider returns the

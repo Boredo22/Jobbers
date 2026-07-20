@@ -10,6 +10,7 @@ export {
 	PRICING,
 } from "./models";
 export {
+	COVER_LETTER_PROMPT,
 	PROPOSE_PROFILE_PROMPT,
 	promptVersion,
 	REVIEW_RESUME_PROMPT,

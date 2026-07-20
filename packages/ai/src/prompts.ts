@@ -39,6 +39,9 @@ export const REVIEW_RESUME_PROMPT = "review-resume.v1.md";
  */
 export const TAILOR_POSTING_PROMPT = "tailor-posting.v2.md";
 
+/** The current "one-paragraph cover letter" prompt (Chrome-extension companion). */
+export const COVER_LETTER_PROMPT = "cover-letter.v1.md";
+
 /**
  * Read a prompt file and substitute every {{placeholder}} from `vars`.
  * Throws if the file references a placeholder `vars` doesn't provide — a missing

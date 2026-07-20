@@ -1,0 +1,15 @@
+{
+	"manifest_version": 3,
+	"name": "Jobber — Cover Letter Companion",
+	"version": "0.1.0",
+	"description": "Scan a job page, draft a one-paragraph cover letter via your Jobber API, edit it in a sidebar, then copy, download as PDF, or drag it into the page's upload box.",
+	"action": {
+		"default_title": "Jobber: open cover-letter sidebar"
+	},
+	"background": {
+		"service_worker": "background.js",
+		"type": "module"
+	},
+	"permissions": ["activeTab", "scripting", "storage"],
+	"host_permissions": ["http://localhost/*", "http://127.0.0.1/*"]
+}

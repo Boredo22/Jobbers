@@ -7,7 +7,9 @@ import {
 import { env } from "./lib/config";
 import { adminRoutes } from "./modules/admin/routes";
 import { companiesRoutes } from "./modules/companies/routes";
+import { coverLetterRoutes } from "./modules/cover-letter/routes";
 import { jobsRoutes } from "./modules/jobs/routes";
+import { modelsRoutes } from "./modules/models/routes";
 import { schedulerPlugin } from "./modules/poller/scheduler";
 import { profileRoutes } from "./modules/profile/routes";
 import { resumeRoutes } from "./modules/resume/routes";
@@ -44,6 +46,8 @@ app.register(resumeRoutes);
 app.register(tailorRoutes);
 app.register(sourcesRoutes);
 app.register(settingsRoutes);
+app.register(coverLetterRoutes);
+app.register(modelsRoutes);
 
 // Background jobs are plugins too: this one arms the twice-daily poll cron
 // (a no-op unless POLL_SCHEDULE_ENABLED=true).

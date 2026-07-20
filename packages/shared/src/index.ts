@@ -613,3 +613,75 @@ export const PrefilterSettingsSchema = z.object({
 		.describe("Any of these in a title disqualifies it, even on a match."),
 });
 export type PrefilterSettings = z.infer<typeof PrefilterSettingsSchema>;
+
+// ---------------------------------------------------------------------------
+// Cover letter — the Chrome-extension companion. The extension scans a job
+// page, POSTs the raw text here, and gets back a one-paragraph letter draft.
+// Both sides of that wire (extension background worker + API route) validate
+// against these schemas, same as web ⇄ api.
+// ---------------------------------------------------------------------------
+
+// POST /api/cover-letter body. jobText is whatever the extension scraped off
+// the page — bounded so a scan that accidentally grabs a whole SPA bundle
+// can't blow the prompt budget. candidateName is who signs the letter.
+export const CoverLetterRequestSchema = z.object({
+	jobText: z
+		.string()
+		.trim()
+		.min(80, "scanned text too short to be a job description")
+		.max(30_000, "scanned text too long — select just the description"),
+	candidateName: z.string().trim().min(1).max(120).default("Michael Brown"),
+	pageUrl: z.string().url().optional(), // where it was scanned (context only)
+	pageTitle: z.string().max(300).optional(), // tab title (helps name company/role)
+});
+export type CoverLetterRequest = z.infer<typeof CoverLetterRequestSchema>;
+
+// The AI output contract for one cover-letter run. `letter` is the complete
+// plain text — date line, greeting, ONE body paragraph, sign-off — so the
+// extension can drop it straight into an editable textarea. company/roleTitle
+// come back separately for the PDF filename ("Cover_Letter_<Company>.pdf").
+export const CoverLetterDraftSchema = z.object({
+	company: z
+		.string()
+		.describe("Company name as inferred from the posting (or 'Unknown')."),
+	roleTitle: z
+		.string()
+		.describe("Role title as inferred from the posting (or 'Unknown')."),
+	letter: z
+		.string()
+		.describe(
+			"The full letter as plain text: date line, blank line, greeting, blank line, one body paragraph (120–170 words), blank line, sign-off with the candidate's name.",
+		),
+});
+export type CoverLetterDraft = z.infer<typeof CoverLetterDraftSchema>;
+
+// POST /api/cover-letter 200 response: the draft plus which model wrote it
+// (shown in the sidebar footer, mirrors the ai_runs ledger row).
+export const CoverLetterResponseSchema = z.object({
+	draft: CoverLetterDraftSchema,
+	model: z.string(),
+});
+export type CoverLetterResponse = z.infer<typeof CoverLetterResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// AI Models (OpenRouter catalog) — the lean, display-ready shape the api maps
+// the public OpenRouter catalog into. Raw catalog prices are strings in USD
+// *per token*; the api converts to USD per million tokens (the unit every
+// pricing page speaks) before it ever reaches the browser.
+// ---------------------------------------------------------------------------
+export const OpenRouterModelSchema = z.object({
+	id: z.string(), // the slug requests are made with, e.g. "deepseek/deepseek-chat"
+	name: z.string(), // human label, e.g. "DeepSeek: DeepSeek V3"
+	contextLength: z.number().nullable(),
+	promptPerMTok: z.number(), // USD per 1M input tokens
+	completionPerMTok: z.number(), // USD per 1M output tokens
+});
+export type OpenRouterModel = z.infer<typeof OpenRouterModelSchema>;
+
+// GET /api/models 200 response. fetchedAt is when the catalog was last pulled
+// from OpenRouter (it's cached api-side for ~an hour).
+export const ModelsCatalogSchema = z.object({
+	models: z.array(OpenRouterModelSchema),
+	fetchedAt: z.string(),
+});
+export type ModelsCatalog = z.infer<typeof ModelsCatalogSchema>;

@@ -335,7 +335,7 @@ export const pollRuns = pgTable("poll_runs", {
 export const aiRuns = pgTable("ai_runs", {
 	id: uuid("id").defaultRandom().primaryKey(),
 	feature: text("feature", {
-		enum: ["score", "resume_review", "profile", "tailor"],
+		enum: ["score", "resume_review", "profile", "tailor", "cover_letter"],
 	}).notNull(),
 	provider: text("provider").notNull(), // api | cli | cowork
 	model: text("model").notNull(),

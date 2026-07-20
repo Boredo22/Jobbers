@@ -1,0 +1,22 @@
+{
+	"name": "extension",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "node build.mjs",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@jobber/shared": "workspace:*",
+		"jspdf": "^3.0.3",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@types/chrome": "^0.1.32",
+		"esbuild": "^0.25.0",
+		"typescript": "^5.9.3",
+		"vitest": "^3.2.4"
+	}
+}
