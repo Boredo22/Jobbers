@@ -1,6 +1,23 @@
 import type { z } from "zod";
 
 /**
+ * Build the Error for a non-2xx response. The api's error routes send
+ * `{ message }` bodies (400 validation, 502 upstream) — surface that text so a
+ * toast can say WHY, not just "400". Falls back to status + path when the body
+ * isn't JSON or has no message.
+ */
+async function httpError(res: Response, path: string): Promise<Error> {
+	let detail = "";
+	try {
+		const body = (await res.json()) as { message?: unknown };
+		if (typeof body.message === "string") detail = `: ${body.message}`;
+	} catch {
+		// Non-JSON body — the status line will have to do.
+	}
+	return new Error(`${res.status} ${path}${detail}`);
+}
+
+/**
  * Typed GET helper. Fetches `path`, then validates the JSON against a Zod
  * schema before returning it. If the backend ever returns a shape that
  * doesn't match, this throws loudly here — instead of a silent bug surfacing
@@ -12,7 +29,7 @@ export async function apiGet<T>(
 	schema: z.ZodType<T>,
 ): Promise<T> {
 	const res = await fetch(path);
-	if (!res.ok) throw new Error(`${res.status} ${path}`);
+	if (!res.ok) throw await httpError(res, path);
 	return schema.parse(await res.json());
 }
 
@@ -33,6 +50,6 @@ export async function apiSend<T>(
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(body),
 	});
-	if (!res.ok) throw new Error(`${res.status} ${path}`);
+	if (!res.ok) throw await httpError(res, path);
 	return schema.parse(await res.json());
 }

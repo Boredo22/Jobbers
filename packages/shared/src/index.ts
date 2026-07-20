@@ -707,3 +707,21 @@ export const AiModelSettingsResponseSchema = z.object({
 export type AiModelSettingsResponse = z.infer<
 	typeof AiModelSettingsResponseSchema
 >;
+
+// GET /api/models/usage 200 response: the ai_runs ledger grouped by model —
+// what each model has actually been used for and cost. totalCostUsd is null
+// only when every run of that model predates cost tracking.
+export const ModelUsageRowSchema = z.object({
+	model: z.string(),
+	calls: z.number(),
+	inputTokens: z.number(),
+	outputTokens: z.number(),
+	totalCostUsd: z.number().nullable(),
+	lastUsedAt: z.string(), // ISO timestamp of the most recent run
+});
+export type ModelUsageRow = z.infer<typeof ModelUsageRowSchema>;
+
+export const ModelsUsageSchema = z.object({
+	usage: z.array(ModelUsageRowSchema),
+});
+export type ModelsUsage = z.infer<typeof ModelsUsageSchema>;

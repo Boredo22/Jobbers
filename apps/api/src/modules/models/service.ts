@@ -1,5 +1,12 @@
-import type { ModelsCatalog, OpenRouterModel } from "@jobber/shared";
+import type {
+	ModelsCatalog,
+	ModelUsageRow,
+	OpenRouterModel,
+} from "@jobber/shared";
+import { count, desc, max, sum } from "drizzle-orm";
 import { z } from "zod";
+import { db } from "../../db/client";
+import { aiRuns } from "../../db/schema";
 
 // ---------------------------------------------------------------------------
 // models/service.ts — fetch + cache the public OpenRouter model catalog.
@@ -104,4 +111,36 @@ export async function getCatalog(): Promise<ModelsCatalog> {
 		if (cache) return cache.catalog;
 		throw err;
 	}
+}
+
+/**
+ * Actual spend per model from the ai_runs ledger, newest-used first — the
+ * "what did my choice really cost" half of the AI Models page. SQL aggregates
+ * of numeric/bigint come back from Drizzle as *strings* (exactness over
+ * convenience — same reason est_cost is numeric), so everything numeric is
+ * parsed here at the boundary rather than in a React component.
+ */
+export async function getModelUsage(): Promise<ModelUsageRow[]> {
+	const lastUsed = max(aiRuns.createdAt);
+	const rows = await db
+		.select({
+			model: aiRuns.model,
+			calls: count(),
+			inputTokens: sum(aiRuns.inputTokens),
+			outputTokens: sum(aiRuns.outputTokens),
+			totalCost: sum(aiRuns.estCost),
+			lastUsedAt: lastUsed,
+		})
+		.from(aiRuns)
+		.groupBy(aiRuns.model)
+		.orderBy(desc(lastUsed));
+	return rows.map((r) => ({
+		model: r.model,
+		calls: r.calls,
+		inputTokens: Number(r.inputTokens ?? 0),
+		outputTokens: Number(r.outputTokens ?? 0),
+		// SUM of an all-NULL group is NULL — keep it null, don't fake a $0.
+		totalCostUsd: r.totalCost === null ? null : Number(r.totalCost),
+		lastUsedAt: (r.lastUsedAt ?? new Date(0)).toISOString(),
+	}));
 }
