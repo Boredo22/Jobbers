@@ -37,7 +37,19 @@ export const companies = pgTable("companies", {
 	// duplicating them. The company name is our stable business key.
 	name: text("name").notNull().unique(),
 	atsType: text("ats_type", {
-		enum: ["greenhouse", "lever", "ashby", "manual"],
+		// TypeScript-level enum only (the column is plain text, no CHECK
+		// constraint) — extending this list needs no migration.
+		enum: [
+			"greenhouse",
+			"lever",
+			"ashby",
+			"smartrecruiters",
+			"workable",
+			"recruitee",
+			"breezy",
+			"bamboohr",
+			"manual",
+		],
 	}).notNull(),
 	atsToken: text("ats_token"), // null for "manual" companies (no pollable API)
 	fitGroup: integer("fit_group"), // your Group 1–5 tiers

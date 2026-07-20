@@ -146,7 +146,10 @@ if (failed.length > 0) {
 
 // --- One normalized posting per platform (proves the mapping) --------------
 console.log("\n--- sample normalized posting per platform ---");
-for (const platform of ["greenhouse", "lever", "ashby"] as const) {
+// Derived from the registry, so a newly added ATS shows up here automatically.
+for (const platform of Object.keys(adapters) as (keyof typeof adapters)[]) {
+	// Only report platforms that actually have boards in companies.json.
+	if (!companies.some((c) => c.atsType === platform)) continue;
 	const withSample = ok.find((r) => r.atsType === platform && r.sample);
 	if (withSample) {
 		console.log(`\n[${platform}] ${withSample.name}:`);

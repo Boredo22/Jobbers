@@ -23,7 +23,17 @@ export type Health = z.infer<typeof HealthSchema>;
 // ---------------------------------------------------------------------------
 // Company — one of the ~50 target employers we poll.
 // ---------------------------------------------------------------------------
-export const AtsTypeSchema = z.enum(["greenhouse", "lever", "ashby", "manual"]);
+export const AtsTypeSchema = z.enum([
+	"greenhouse",
+	"lever",
+	"ashby",
+	"smartrecruiters",
+	"workable",
+	"recruitee",
+	"breezy",
+	"bamboohr",
+	"manual",
+]);
 export type AtsType = z.infer<typeof AtsTypeSchema>;
 
 export const CompanySchema = z.object({
@@ -131,7 +141,7 @@ export type JobsQuery = z.infer<typeof JobsQuerySchema>;
 // single place to answer "what is being pinged or scraped, and is it healthy?".
 // ---------------------------------------------------------------------------
 export const SourceKindSchema = z.enum([
-	"ats", // polled applicant-tracking boards (greenhouse/lever/ashby)
+	"ats", // polled applicant-tracking boards (greenhouse/lever/ashby/…)
 	"aggregator", // scraped/parsed feeds (HN Who-is-Hiring, RSS)
 	"manual", // human/bookmarklet capture
 	"email", // IMAP status ingestion (signals, not postings)
