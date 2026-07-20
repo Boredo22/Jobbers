@@ -53,6 +53,12 @@ const INCLUDE_TITLE_KEYWORDS = [
 	"operations lead",
 	"business operations",
 	"revenue operations",
+	// Analyst cluster — deliberately specific titles, not a bare "analyst",
+	// which would drag in data/financial/security analyst roles.
+	"business analyst",
+	"systems analyst",
+	"product analyst",
+	"operations analyst",
 	"enablement",
 	"onboarding",
 	"customer success engineer",
