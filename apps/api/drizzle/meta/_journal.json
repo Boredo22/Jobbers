@@ -64,6 +64,13 @@
       "when": 1784580885731,
       "tag": "0008_zippy_puck",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784584458360,
+      "tag": "0009_round_captain_stacy",
+      "breakpoints": true
     }
   ]
 }

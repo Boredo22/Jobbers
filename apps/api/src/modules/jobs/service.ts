@@ -3,6 +3,7 @@ import { and, desc, eq, type SQL } from "drizzle-orm";
 import { db } from "../../db/client";
 import { companies, jobPostings } from "../../db/schema";
 import { isCandidate, isUsLocation } from "../poller/prefilter";
+import { getPrefilterSettings } from "../settings/service";
 
 // ---------------------------------------------------------------------------
 // jobs/service.ts — read side of the job postings.
@@ -43,10 +44,12 @@ export async function listJobs(query: JobsQuery): Promise<JobListItem[]> {
 		.where(conditions.length ? and(...conditions) : undefined)
 		.orderBy(desc(jobPostings.firstSeenAt));
 
-	// Attach the computed prefilter verdict to every row…
+	// Attach the computed prefilter verdict to every row — with the keyword
+	// lists loaded ONCE, not per row (they're the same for the whole request).
+	const prefilter = await getPrefilterSettings();
 	const withCandidate: JobListItem[] = rows.map((row) => ({
 		...row,
-		candidate: isCandidate(row),
+		candidate: isCandidate(row, prefilter),
 	}));
 
 	// …then apply the computed filters only if the caller asked. Both are derived

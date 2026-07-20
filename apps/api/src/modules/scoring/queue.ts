@@ -5,6 +5,7 @@ import { fitScores, jobPostings, scoringQueue } from "../../db/schema";
 import { env } from "../../lib/config";
 import { isCandidate } from "../poller/prefilter";
 import { getActiveCompCeiling } from "../profile/service";
+import { getPrefilterSettings } from "../settings/service";
 import { notifyHighScore, scorePosting } from "./service";
 
 // ---------------------------------------------------------------------------
@@ -75,8 +76,9 @@ export async function enqueueOpenCandidates(limit: number): Promise<number> {
 	const underCeiling = (compMin: number | null) =>
 		ceiling === null || compMin === null || compMin <= ceiling;
 
+	const prefilter = await getPrefilterSettings();
 	const ids = rows
-		.filter((r) => isCandidate(r) && underCeiling(r.compMin))
+		.filter((r) => isCandidate(r, prefilter) && underCeiling(r.compMin))
 		.slice(0, limit)
 		.map((r) => r.id);
 	return enqueueForScoring(ids);

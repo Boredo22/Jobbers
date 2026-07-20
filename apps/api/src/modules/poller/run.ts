@@ -4,6 +4,7 @@ import { db } from "../../db/client";
 import { companies, jobPostings, pollRuns } from "../../db/schema";
 import { notify } from "../../lib/notify";
 import { enqueueForScoring } from "../scoring/queue";
+import { getPrefilterSettings } from "../settings/service";
 import { adapters } from "./index";
 import { isCandidate } from "./prefilter";
 
@@ -57,6 +58,10 @@ export async function runPoll(): Promise<PollSummary> {
 		.select()
 		.from(companies)
 		.where(and(eq(companies.active, true), ne(companies.atsType, "manual")));
+
+	// One settings load for the whole run — every board's new postings are
+	// judged against the same keyword lists.
+	const prefilter = await getPrefilterSettings();
 
 	const limit = pLimit(CONCURRENCY);
 
@@ -142,7 +147,7 @@ export async function runPoll(): Promise<PollSummary> {
 							// genuinely new posting.
 							if (row.firstSeenAt.getTime() >= startedAt.getTime()) {
 								newCount++;
-								if (isCandidate(row)) {
+								if (isCandidate(row, prefilter)) {
 									candidates.push({
 										jobPostingId: row.id,
 										companyId: c.id,

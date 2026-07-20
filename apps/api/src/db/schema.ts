@@ -349,3 +349,16 @@ export const aiRuns = pgTable("ai_runs", {
 		.notNull()
 		.defaultNow(),
 });
+
+// --- app_settings: small editable config, one row per key -------------------
+// Generic key/value store for settings the UI can edit without a deploy (the
+// first tenant: the prefilter's title-keyword lists). jsonb keeps the shape
+// flexible; each reader parses the value through its Zod schema in shared, so
+// a malformed row fails loudly at the boundary instead of deep in a filter.
+export const appSettings = pgTable("app_settings", {
+	key: text("key").primaryKey(),
+	value: jsonb("value").notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true })
+		.notNull()
+		.defaultNow(),
+});

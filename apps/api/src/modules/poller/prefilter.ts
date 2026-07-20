@@ -1,3 +1,5 @@
+import type { PrefilterSettings } from "@jobber/shared";
+
 // ---------------------------------------------------------------------------
 // prefilter.ts — the cheap gate before expensive LLM scoring.
 //
@@ -5,9 +7,12 @@
 // it worth spending scoring tokens on? Keeping it pure (no I/O) makes it
 // trivially unit-testable (convention §9.3) and keeps the poll runner readable.
 //
-// The keyword clusters are transcribed from the owner's JobFinder strategy
-// (the AI-Enablement title cluster). The prefilter is intentionally *lenient*:
-// it only drops the obvious non-fits (wrong title, or known-onsite far from the
+// The title keywords are EDITABLE: callers load PrefilterSettings (settings
+// service → app_settings row, falling back to the defaults below) and pass them
+// in — isCandidate itself never touches the DB, which is what keeps it pure.
+// The defaults are transcribed from the owner's JobFinder strategy (the
+// AI-Enablement title cluster). The prefilter is intentionally *lenient*: it
+// only drops the obvious non-fits (wrong title, or known-onsite far from the
 // Capital Region). The LLM does the nuanced ranking in Phase 2.
 // ---------------------------------------------------------------------------
 
@@ -101,6 +106,15 @@ const EXCLUDE_TITLE_KEYWORDS = [
 	"registered nurse",
 	"truck driver",
 ];
+
+// The built-in keyword lists as a PrefilterSettings value: the fallback when no
+// app_settings row exists yet, and the seed the settings UI starts from. All
+// entries must be lowercase — isCandidate lowercases the title once and trusts
+// the lists (the settings service normalizes user input on save).
+export const DEFAULT_PREFILTER_SETTINGS: PrefilterSettings = {
+	includeTitleKeywords: INCLUDE_TITLE_KEYWORDS,
+	excludeTitleKeywords: EXCLUDE_TITLE_KEYWORDS,
+};
 
 // The owner's commutable area — the only place non-remote roles survive.
 const CAPITAL_REGION =
@@ -372,12 +386,15 @@ export type PrefilterInput = {
 	remote: boolean | null;
 };
 
-export function isCandidate(posting: PrefilterInput): boolean {
+export function isCandidate(
+	posting: PrefilterInput,
+	settings: PrefilterSettings = DEFAULT_PREFILTER_SETTINGS,
+): boolean {
 	const title = posting.title.toLowerCase();
 
 	// Title gate: must hit the job family and dodge the disqualifiers.
-	if (!containsAny(title, INCLUDE_TITLE_KEYWORDS)) return false;
-	if (containsAny(title, EXCLUDE_TITLE_KEYWORDS)) return false;
+	if (!containsAny(title, settings.includeTitleKeywords)) return false;
+	if (containsAny(title, settings.excludeTitleKeywords)) return false;
 
 	// Location gate. We judge viability from the location TEXT, not the upstream
 	// `remote` flag: some boards tag hybrid, in-office roles as remote=true (e.g.

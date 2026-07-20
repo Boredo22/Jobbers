@@ -595,3 +595,21 @@ export const ApplicationStatusUpdateSchema = z.object({
 export type ApplicationStatusUpdate = z.infer<
 	typeof ApplicationStatusUpdateSchema
 >;
+
+// ---------------------------------------------------------------------------
+// PrefilterSettings — the editable title-keyword lists behind the prefilter
+// (candidate gate). Lives in the app_settings table as jsonb; this schema is
+// the GET/PUT /api/settings/prefilter contract AND the parse boundary when the
+// row is read back from the DB. Keywords are matched as lowercase substrings
+// against posting titles, so the service normalizes them on save.
+// ---------------------------------------------------------------------------
+export const PrefilterSettingsSchema = z.object({
+	includeTitleKeywords: z
+		.array(z.string().trim().min(1))
+		.min(1)
+		.describe("A title must contain ≥1 of these to be a candidate."),
+	excludeTitleKeywords: z
+		.array(z.string().trim().min(1))
+		.describe("Any of these in a title disqualifies it, even on a match."),
+});
+export type PrefilterSettings = z.infer<typeof PrefilterSettingsSchema>;

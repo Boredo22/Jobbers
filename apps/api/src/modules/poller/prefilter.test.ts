@@ -41,6 +41,29 @@ describe("isCandidate — title gate", () => {
 	});
 });
 
+describe("isCandidate — custom keyword settings", () => {
+	const settings = {
+		includeTitleKeywords: ["data analyst"],
+		excludeTitleKeywords: ["intern"],
+	};
+	const posting = (title: string) => ({
+		title,
+		location: "Remote",
+		remote: null,
+	});
+
+	it("caller-supplied lists replace the defaults entirely", () => {
+		// In the custom list, so a candidate now (the default list rejects it)…
+		expect(isCandidate(posting("Data Analyst"), settings)).toBe(true);
+		// …and a default keyword no longer matches once the list is replaced.
+		expect(isCandidate(posting("Business Analyst"), settings)).toBe(false);
+	});
+
+	it("custom exclude keywords still override an include match", () => {
+		expect(isCandidate(posting("Data Analyst Intern"), settings)).toBe(false);
+	});
+});
+
 describe("isCandidate — location gate", () => {
 	it("keeps remote, nationwide, commutable, and unknown locations", () => {
 		expect(candidate("Business Analyst", "Remote")).toBe(true);

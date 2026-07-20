@@ -6,6 +6,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";
+import { TitleFiltersDialog } from "@/components/TitleFiltersDialog";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import {
 	Table,
@@ -97,6 +98,7 @@ export function JobsPage() {
 						/>
 						US only
 					</label>
+					<TitleFiltersDialog />
 				</div>
 			</div>
 
