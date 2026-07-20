@@ -87,6 +87,26 @@ export function ResumePage() {
 			toastError("Activate failed — the old resume is still active."),
 	});
 
+	// A tailored resume is a per-posting draft, not what the scorer should grade
+	// against. Making one active is almost always a mistake, so confirm first
+	// (the guard the tailor-v2 spec asks for) rather than silently allowing it.
+	const requestActivate = (rv: { id: string; kind: string; label: string }) => {
+		if (
+			rv.kind === "tailored" &&
+			!window.confirm(
+				`"${rv.label}" is a tailored, per-posting resume. Make it the scorer's active base anyway?`,
+			)
+		)
+			return;
+		activate.mutate(rv.id);
+	};
+
+	// Resolve a tailored row's base label from the list (null if the base is gone).
+	const parentLabel = (parentId: string | null): string | null =>
+		parentId
+			? (list.data?.find((r) => r.id === parentId)?.label ?? null)
+			: null;
+
 	const runReview = useMutation({
 		mutationFn: (id: string) =>
 			apiSend(`/api/resumes/${id}/review`, "POST", {}, ResumeReviewSchema),
@@ -151,10 +171,20 @@ export function ResumePage() {
 										{rv.label}
 									</span>
 									{rv.active && <Badge variant="green">active</Badge>}
+									{rv.kind === "tailored" && (
+										<Badge variant="blue">tailored</Badge>
+									)}
 								</div>
 								<div className="text-slate-400 text-xs">
 									{rv.charCount.toLocaleString()} chars · uploaded{" "}
 									{fmtDate(rv.createdAt)}
+									{rv.kind === "tailored" && (
+										<>
+											{" "}
+											· tailored from{" "}
+											{parentLabel(rv.parentId) ?? "(base removed)"}
+										</>
+									)}
 								</div>
 							</div>
 							<Button
@@ -167,7 +197,7 @@ export function ResumePage() {
 							<Button
 								size="sm"
 								disabled={rv.active || activate.isPending}
-								onClick={() => activate.mutate(rv.id)}
+								onClick={() => requestActivate(rv)}
 							>
 								{rv.active ? "Active" : "Set active"}
 							</Button>

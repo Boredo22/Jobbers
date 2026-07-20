@@ -1,6 +1,7 @@
 import {
 	AiSpendSchema,
 	ApplicationWithEventsSchema,
+	ResumeVersionSchema,
 	type ScoreVerdict,
 	type TriageItem,
 	TriageItemSchema,
@@ -16,6 +17,7 @@ import { apiGet, apiSend } from "@/lib/api";
 import { toastError } from "@/lib/toast";
 
 const TriageListSchema = z.array(TriageItemSchema);
+const ResumeListSchema = z.array(ResumeVersionSchema);
 const OkSchema = z.object({ ok: z.literal(true) });
 
 // Admin-action response shapes (the buttons that replace the CLI scripts).
@@ -73,6 +75,22 @@ export function TriagePage() {
 		queryFn: () => apiGet("/api/stats/ai-spend", AiSpendSchema),
 	});
 
+	// Resume versions — used to attach the right tailored resume when marking a
+	// posting applied (so "which resume went out" is recorded). Shared query key
+	// with the tailor dialog, so assembling a resume refreshes this automatically.
+	const resumes = useQuery({
+		queryKey: ["resumes"],
+		queryFn: () => apiGet("/api/resumes", ResumeListSchema),
+	});
+
+	// The newest tailored resume assembled for a posting, or null. That's the doc
+	// the application should record as the one that went out.
+	const tailoredFor = (jobPostingId: string): string | null =>
+		(resumes.data ?? [])
+			.filter((r) => r.kind === "tailored" && r.jobPostingId === jobPostingId)
+			.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))[0]?.id ??
+		null;
+
 	// 👍/👎 — updates the score's feedback, then refetches so the buttons reflect it.
 	const feedback = useMutation({
 		mutationFn: (vars: { id: string; verdict: ScoreVerdict }) =>
@@ -109,6 +127,9 @@ export function TriagePage() {
 					channel: "ats",
 					jobPostingId: item.jobPostingId,
 					companyId: item.companyId,
+					// If a tailored resume was assembled for this posting, record it as
+					// the document that went out (the schema already accepts this).
+					resumeVersionId: tailoredFor(item.jobPostingId) ?? undefined,
 				},
 				ApplicationWithEventsSchema,
 			),

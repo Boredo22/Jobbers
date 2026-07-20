@@ -1,4 +1,8 @@
 import {
+	type ResumeVersion,
+	ResumeVersionSchema,
+	type TailorAssembleResult,
+	TailorAssembleResultSchema,
 	type TailoredDraft,
 	TailoredDraftRecordSchema,
 	TailoredDraftSchema,
@@ -6,6 +10,8 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { diffWords } from "diff";
 import { useEffect, useState } from "react";
+import { z } from "zod";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -16,12 +22,11 @@ import {
 import { apiGet, apiSend } from "@/lib/api";
 
 // ---------------------------------------------------------------------------
-// TailorDialog — the tailor-to-posting flow (step 3.2b), opened from a triage
-// card OR a pipeline card. Generate AI resume edits + a draft outreach note for
-// THIS posting, show the edits as before/after word diffs, let the human finish
-// the outreach note, and save the result as a draft attached to the application.
-// Re-opening the dialog loads the last saved draft, so nothing you saved is
-// ever unreachable.
+// TailorDialog — the tailor-to-posting flow (step 3.2b + tailor-v2), opened from
+// a triage card OR a pipeline card. Pick a base resume, generate AI edits + a
+// keyword-coverage map + a draft outreach note for THIS posting, review the edits
+// as before/after word diffs, then assemble the full tailored resume (a free,
+// deterministic step) and download it. Everything is a draft the human finishes.
 // ---------------------------------------------------------------------------
 
 // The minimum the dialog needs to know about a posting. TriageItem satisfies
@@ -31,6 +36,30 @@ export type TailorTarget = {
 	title: string;
 	companyName: string;
 };
+
+const ResumeListSchema = z.array(ResumeVersionSchema);
+// Generate now echoes the base it used, so save/assemble record the exact base.
+const GenerateResponseSchema = z.object({
+	draft: TailoredDraftSchema,
+	resumeVersionId: z.string().uuid(),
+});
+
+// A filename-safe version of "Company — Title" for the downloaded .md.
+function safeFilename(name: string): string {
+	return `${name.replace(/[\\/:*?"<>|]/g, "-").slice(0, 120)}.md`;
+}
+
+// Trigger a client-side download of `text` as a markdown file. No server round-trip
+// — the assembled resume already lives on the client, so this is a pure Blob URL.
+function downloadMarkdown(filename: string, text: string): void {
+	const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = filename;
+	a.click();
+	URL.revokeObjectURL(url);
+}
 
 // One edit's before→after, rendered as a two-column word diff: deletions
 // highlighted on the left (original), additions on the right (tailored). Keys are
@@ -87,6 +116,34 @@ function WordDiff({
 	);
 }
 
+// The keyword-coverage map: one chip per ad keyword, green when the resume already
+// truthfully covers it, amber when it's a gap. The honest note is the tooltip.
+function KeywordChips({ keywords }: { keywords: TailoredDraft["keywords"] }) {
+	if (keywords.length === 0) return null;
+	return (
+		<div className="space-y-1.5">
+			<h4 className="font-medium text-slate-600 text-sm">
+				Keywords from the ad{" "}
+				<span className="font-normal text-slate-400">
+					(green = covered, amber = gap — hover for the note)
+				</span>
+			</h4>
+			<div className="flex flex-wrap gap-1.5">
+				{keywords.map((k) => (
+					<Badge
+						key={k.keyword}
+						variant={k.covered ? "green" : "amber"}
+						title={k.note}
+						className="cursor-help"
+					>
+						{k.covered ? "✓" : "△"} {k.keyword}
+					</Badge>
+				))}
+			</div>
+		</div>
+	);
+}
+
 export function TailorDialog({
 	item,
 	onClose,
@@ -97,10 +154,26 @@ export function TailorDialog({
 	const queryClient = useQueryClient();
 	// The current draft (starts as the model's output; the outreach note is then
 	// human-editable before saving). State resets automatically when a different
-	// posting is opened because the parent remounts this component via `key` —
-	// cleaner than a reset-on-prop-change effect.
+	// posting is opened because the parent remounts this component via `key`.
 	const [draft, setDraft] = useState<TailoredDraft | null>(null);
 	const [saved, setSaved] = useState(false);
+	// The base resume the draft was tailored from — echoed back by generate, so
+	// save + assemble record the exact version (provenance can't drift).
+	const [baseVersionId, setBaseVersionId] = useState<string | null>(null);
+	// The assembled full resume (after the deterministic assemble step) + its
+	// editable text for download. Cleared whenever a new draft is generated.
+	const [assembled, setAssembled] = useState<TailorAssembleResult | null>(null);
+	const [assembledText, setAssembledText] = useState("");
+
+	// Bases to choose from (tailored versions aren't valid bases to tailor from).
+	const resumes = useQuery({
+		queryKey: ["resumes"],
+		queryFn: () => apiGet("/api/resumes", ResumeListSchema),
+		enabled: item !== null,
+	});
+	const bases: ResumeVersion[] = (resumes.data ?? []).filter(
+		(r) => r.kind === "base",
+	);
 
 	// The last SAVED draft for this posting (null until one is saved). Shared
 	// query key with PipelinePage's outreach-note section, so a save here
@@ -115,33 +188,47 @@ export function TailorDialog({
 		enabled: item !== null,
 	});
 
-	// Pre-load the saved draft on open, so the dialog resumes where you left off
-	// instead of a blank "Tailor with AI" screen. The `draft === null` guard
-	// makes this a one-time init: once anything sets draft (this effect or a
-	// generate), it never overwrites again.
+	// Pre-load the saved draft on open (resume where you left off), including the
+	// base it used. One-time init: once `draft` is set, this never overwrites.
 	useEffect(() => {
 		if (existing.data && draft === null) {
 			setDraft(existing.data);
 			setSaved(true);
+			if (existing.data.resumeVersionId)
+				setBaseVersionId(existing.data.resumeVersionId);
 		}
 	}, [existing.data, draft]);
+
+	// Default the base picker to the active resume once the list loads (unless a
+	// saved draft already pinned one). Keeps the common case one-click.
+	useEffect(() => {
+		if (baseVersionId === null && bases.length > 0) {
+			setBaseVersionId((bases.find((b) => b.active) ?? bases[0])?.id ?? null);
+		}
+	}, [bases, baseVersionId]);
 
 	const generate = useMutation({
 		mutationFn: (jobPostingId: string) =>
 			apiSend(
 				`/api/postings/${jobPostingId}/tailor`,
 				"POST",
-				{},
-				TailoredDraftSchema,
+				baseVersionId ? { resumeVersionId: baseVersionId } : {},
+				GenerateResponseSchema,
 			),
 		onSuccess: (data) => {
-			setDraft(data);
+			setDraft(data.draft);
+			setBaseVersionId(data.resumeVersionId); // the base actually used
 			setSaved(false);
+			setAssembled(null);
+			setAssembledText("");
 		},
 	});
 
 	const save = useMutation({
-		mutationFn: (vars: { jobPostingId: string; body: TailoredDraft }) =>
+		mutationFn: (vars: {
+			jobPostingId: string;
+			body: TailoredDraft & { resumeVersionId: string };
+		}) =>
 			apiSend(
 				`/api/postings/${vars.jobPostingId}/tailor/save`,
 				"POST",
@@ -153,6 +240,26 @@ export function TailorDialog({
 			queryClient.invalidateQueries({
 				queryKey: ["tailor-draft", vars.jobPostingId],
 			});
+		},
+	});
+
+	const assemble = useMutation({
+		mutationFn: (vars: {
+			jobPostingId: string;
+			body: { draft: TailoredDraft; resumeVersionId: string };
+		}) =>
+			apiSend(
+				`/api/postings/${vars.jobPostingId}/tailor/resume`,
+				"POST",
+				vars.body,
+				TailorAssembleResultSchema,
+			),
+		onSuccess: (data) => {
+			setAssembled(data);
+			setAssembledText(data.resume.extractedText);
+			// A tailored resume_versions row (and the application link) just appeared.
+			queryClient.invalidateQueries({ queryKey: ["resumes"] });
+			queryClient.invalidateQueries({ queryKey: ["applications"] });
 		},
 	});
 
@@ -174,6 +281,37 @@ export function TailorDialog({
 						posting. Everything is a draft; you finish and send it by hand.
 					</DialogDescription>
 
+					{/* Base picker — which resume to tailor from. Locked once a draft
+					    exists (re-tailor to switch bases). */}
+					<div className="mt-4 flex flex-wrap items-center gap-2">
+						<label
+							htmlFor="tailor-base"
+							className="font-medium text-slate-600 text-sm"
+						>
+							Base resume
+						</label>
+						<select
+							id="tailor-base"
+							className="rounded-md border border-slate-300 p-1.5 text-slate-700 text-sm disabled:bg-slate-100 disabled:text-slate-400"
+							value={baseVersionId ?? ""}
+							disabled={draft !== null || bases.length === 0}
+							onChange={(e) => setBaseVersionId(e.target.value || null)}
+						>
+							{bases.length === 0 && <option value="">No resumes yet</option>}
+							{bases.map((b) => (
+								<option key={b.id} value={b.id}>
+									{b.label}
+									{b.active ? " (active)" : ""}
+								</option>
+							))}
+						</select>
+						{draft && (
+							<span className="text-slate-400 text-xs">
+								locked — re-tailor to switch
+							</span>
+						)}
+					</div>
+
 					{!draft && existing.isPending && (
 						<p className="mt-4 text-slate-500 text-sm">
 							Checking for a saved draft…
@@ -183,7 +321,7 @@ export function TailorDialog({
 					{!draft && !existing.isPending && (
 						<div className="mt-4">
 							<Button
-								disabled={generate.isPending}
+								disabled={generate.isPending || baseVersionId === null}
 								onClick={() => generate.mutate(item.jobPostingId)}
 							>
 								{generate.isPending ? "Tailoring…" : "✨ Tailor with AI"}
@@ -198,6 +336,9 @@ export function TailorDialog({
 							<p className="rounded-md bg-slate-50 p-3 text-slate-700 text-sm">
 								{draft.summary}
 							</p>
+
+							{/* Keyword-coverage map */}
+							<KeywordChips keywords={draft.keywords} />
 
 							{/* Resume edits, each a before/after diff */}
 							<div className="space-y-4">
@@ -238,11 +379,12 @@ export function TailorDialog({
 
 							<div className="flex items-center gap-3">
 								<Button
-									disabled={save.isPending}
+									disabled={save.isPending || baseVersionId === null}
 									onClick={() =>
+										baseVersionId &&
 										save.mutate({
 											jobPostingId: item.jobPostingId,
-											body: draft,
+											body: { ...draft, resumeVersionId: baseVersionId },
 										})
 									}
 								>
@@ -262,6 +404,97 @@ export function TailorDialog({
 								)}
 								{save.isError && (
 									<span className="text-red-600 text-sm">Save failed.</span>
+								)}
+							</div>
+
+							{/* Deterministic assembly → a full, downloadable tailored resume.
+							    No AI cost; this is what creates the resume version + link. */}
+							<div className="space-y-2 border-slate-200 border-t pt-4">
+								<h4 className="font-medium text-slate-600 text-sm">
+									Full tailored resume
+								</h4>
+								<p className="text-slate-400 text-xs">
+									Applies every edit above to the base — no AI, no invented
+									text. Creates a saved tailored version and links it to the
+									application.
+								</p>
+								<Button
+									disabled={assemble.isPending || baseVersionId === null}
+									onClick={() =>
+										baseVersionId &&
+										assemble.mutate({
+											jobPostingId: item.jobPostingId,
+											body: { draft, resumeVersionId: baseVersionId },
+										})
+									}
+								>
+									{assemble.isPending
+										? "Assembling…"
+										: "🧩 Assemble full resume"}
+								</Button>
+								{assemble.isError && (
+									<span className="ml-2 text-red-600 text-sm">
+										Assemble failed.
+									</span>
+								)}
+
+								{assembled && (
+									<div className="space-y-2">
+										{assembled.failed.length > 0 && (
+											<div className="rounded-md border border-amber-200 bg-amber-50 p-2 text-amber-800 text-xs">
+												<span className="font-medium">
+													Couldn't auto-apply {assembled.failed.length} edit
+													{assembled.failed.length > 1 ? "s" : ""}
+												</span>{" "}
+												— the quoted text wasn't found verbatim. Do these by
+												hand:
+												<ul className="mt-1 space-y-0.5">
+													{assembled.failed.map((f) => (
+														<li key={`${f.section}:${f.original}`}>
+															•{" "}
+															<span className="font-medium">{f.section}:</span>{" "}
+															{f.tailored}
+														</li>
+													))}
+												</ul>
+											</div>
+										)}
+										<textarea
+											className="h-72 w-full rounded-md border border-slate-300 p-2 font-mono text-slate-700 text-xs"
+											value={assembledText}
+											onChange={(ev) => setAssembledText(ev.target.value)}
+										/>
+										<div className="flex items-center gap-2">
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() =>
+													navigator.clipboard.writeText(assembledText)
+												}
+											>
+												Copy
+											</Button>
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() =>
+													downloadMarkdown(
+														safeFilename(
+															assembled.resume.label ||
+																`${item.companyName} — ${item.title}`,
+														),
+														assembledText,
+													)
+												}
+											>
+												Download .md
+											</Button>
+											<span className="text-green-700 text-sm">
+												✓ Saved as a tailored resume version + linked to the
+												application.
+											</span>
+										</div>
+									</div>
 								)}
 							</div>
 						</div>
