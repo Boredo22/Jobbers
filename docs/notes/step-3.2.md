@@ -230,10 +230,13 @@ scorer, and the AI will critique it against the exact role you're targeting.*
 
 ## What's next — Step 3.2b (tailor-to-posting), then 3.3 (alternate providers)
 
+Both are now built — see their own notes:
+
 - **Tailor-to-posting** (the remaining slice of 3.2): from a high-scoring job,
-  generate tailored resume suggestions + a drafted outreach note, shown as a diff
-  and saved as a *draft* attached to the application — you finish it by hand.
+  generate tailored resume edits + a drafted outreach note, shown as a diff and
+  saved as a *draft* attached to the application — you finish it by hand.
+  → `docs/notes/step-3.2b.md`.
 - **Step 3.3** adds the `CliProvider` and `CoworkProvider` so the exact same
-  scoring/review/propose calls can run through the `claude` CLI (no API key) or a
-  file-queue Cowork session — the third and final proof of the step-2.1 provider
-  abstraction.
+  scoring/review/propose/tailor calls can run through the `claude` CLI (no API key)
+  or a file-queue Cowork session — the third and final proof of the step-2.1
+  provider abstraction. → `docs/notes/step-3.3.md`. **Phase 3 done.**

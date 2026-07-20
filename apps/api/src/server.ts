@@ -13,6 +13,7 @@ import { profileRoutes } from "./modules/profile/routes";
 import { resumeRoutes } from "./modules/resume/routes";
 import { scoringWorkerPlugin } from "./modules/scoring/queue";
 import { scoringRoutes } from "./modules/scoring/routes";
+import { tailorRoutes } from "./modules/tailor/routes";
 import { trackerRoutes } from "./modules/tracker/routes";
 
 // `.withTypeProvider<ZodTypeProvider>()` rewires Fastify so that any Zod schema
@@ -38,6 +39,7 @@ app.register(companiesRoutes);
 app.register(scoringRoutes);
 app.register(profileRoutes);
 app.register(resumeRoutes);
+app.register(tailorRoutes);
 
 // Background jobs are plugins too: this one arms the twice-daily poll cron
 // (a no-op unless POLL_SCHEDULE_ENABLED=true).

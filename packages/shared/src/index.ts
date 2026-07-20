@@ -316,6 +316,68 @@ export const ResumeReviewSchema = z.object({
 export type ResumeReview = z.infer<typeof ResumeReviewSchema>;
 
 // ---------------------------------------------------------------------------
+// Tailor-to-posting (Phase 3, step 3.2b). From a high-scoring job, the AI drafts
+// concrete resume edits + an outreach note, tuned to THAT posting. This is the
+// AI output contract (forced-tool-shaped): the model returns a summary, a set of
+// before/after edits (each diffable in the UI), and a draft outreach note. Per
+// the house rule it's a DRAFT — the human finishes it, nothing is auto-sent.
+// ---------------------------------------------------------------------------
+export const TailorEditSchema = z.object({
+	section: z
+		.string()
+		.describe(
+			"Which resume area this edit touches, e.g. 'Summary', 'Experience — Acme'.",
+		),
+	original: z
+		.string()
+		.describe(
+			"The existing resume text to change, quoted verbatim so the UI can diff it. Empty string if this is brand-new content to add.",
+		),
+	tailored: z
+		.string()
+		.describe(
+			"The proposed replacement text, rewritten to match this posting.",
+		),
+	rationale: z
+		.string()
+		.describe("One sentence: why this change helps for THIS role."),
+});
+export type TailorEdit = z.infer<typeof TailorEditSchema>;
+
+// The AI output contract for a tailoring run (large tier).
+export const TailoredDraftSchema = z.object({
+	summary: z
+		.string()
+		.describe(
+			"2–3 sentences: the angle to take for this posting and the biggest lever to pull.",
+		),
+	edits: z
+		.array(TailorEditSchema)
+		.describe(
+			"Concrete before/after resume edits — 3–6 high-impact ones, not a full rewrite.",
+		),
+	outreachNote: z
+		.string()
+		.describe(
+			"A short, specific draft outreach note (120–180 words) the human can edit and send by hand — never auto-sent.",
+		),
+});
+export type TailoredDraft = z.infer<typeof TailoredDraftSchema>;
+
+// A saved tailored draft as stored/returned by the API: the draft content plus
+// the row metadata (which posting/application/resume it belongs to, provenance).
+export const TailoredDraftRecordSchema = TailoredDraftSchema.extend({
+	id: z.string().uuid(),
+	jobPostingId: z.string().uuid(),
+	applicationId: z.string().uuid().nullable(), // linked if an application exists
+	resumeVersionId: z.string().uuid().nullable(), // the resume that was tailored
+	modelUsed: z.string(),
+	promptVersion: z.string(),
+	createdAt: z.coerce.date(),
+});
+export type TailoredDraftRecord = z.infer<typeof TailoredDraftRecordSchema>;
+
+// ---------------------------------------------------------------------------
 // Application — your pipeline. The event log is the truth; `status` is a fast
 // denormalized mirror of it (see the tracker module + docs/notes/step-1.6.md).
 // These enums mirror the DB enums in apps/api/src/db/schema.ts — schema.ts owns

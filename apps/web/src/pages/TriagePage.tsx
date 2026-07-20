@@ -6,7 +6,9 @@ import {
 	TriageItemSchema,
 } from "@jobber/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { z } from "zod";
+import { TailorDialog } from "@/components/TailorDialog";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +16,18 @@ import { apiGet, apiSend } from "@/lib/api";
 
 const TriageListSchema = z.array(TriageItemSchema);
 const OkSchema = z.object({ ok: z.literal(true) });
+
+// Admin-action response shapes (the buttons that replace the CLI scripts).
+const EnqueueSchema = z.object({ enqueued: z.number().int() });
+const DrainSchema = z.object({
+	processed: z.number().int(),
+	scored: z.number().int(),
+	failed: z.number().int(),
+	notified: z.number().int(),
+});
+const PollSummarySchema = z
+	.object({ newCount: z.number().int(), candidateCount: z.number().int() })
+	.passthrough();
 
 // Score → badge colour. The anchors from the prompt made flesh: 8+ is "apply
 // today" (green), 6–8 is "maybe" (amber), below is "probably not" (neutral).
@@ -34,6 +48,9 @@ export function TriagePage() {
 	const queryClient = useQueryClient();
 	const invalidateTriage = () =>
 		queryClient.invalidateQueries({ queryKey: ["triage"] });
+
+	// Which card's tailor dialog is open (null = closed).
+	const [tailoring, setTailoring] = useState<TriageItem | null>(null);
 
 	const { data, isPending, isError } = useQuery({
 		queryKey: ["triage"],
@@ -87,6 +104,50 @@ export function TriagePage() {
 		},
 	});
 
+	// Poll every board for new postings (replaces `pnpm --filter api ...poll` /
+	// the admin poll route). Slow-ish — it fetches all the boards — so the button
+	// shows a pending state. New candidates get auto-enqueued by the poll itself.
+	const poll = useMutation({
+		mutationFn: () => apiSend("/api/admin/poll", "POST", {}, PollSummarySchema),
+		onSuccess: () => {
+			invalidateTriage();
+			queryClient.invalidateQueries({ queryKey: ["applications"] });
+		},
+	});
+
+	// Score open candidates now: enqueue a batch, then drain it in a loop until the
+	// queue is clear (capped so a click can't run away). Replaces the two CLI
+	// commands the empty state used to tell you to run: score:enqueue + score:drain.
+	const scoreNow = useMutation({
+		mutationFn: async () => {
+			const { enqueued } = await apiSend(
+				"/api/admin/score-candidates",
+				"POST",
+				{},
+				EnqueueSchema,
+			);
+			let scored = 0;
+			let failed = 0;
+			// Each drain scores one batch; loop (bounded) so a full queue clears.
+			for (let i = 0; i < 6; i++) {
+				const s = await apiSend(
+					"/api/admin/score-drain",
+					"POST",
+					{},
+					DrainSchema,
+				);
+				scored += s.scored;
+				failed += s.failed;
+				if (s.processed === 0) break;
+			}
+			return { enqueued, scored, failed };
+		},
+		onSuccess: () => {
+			invalidateTriage();
+			queryClient.invalidateQueries({ queryKey: ["ai-spend"] });
+		},
+	});
+
 	// Is a given card mid-action? Used to disable that card's buttons only.
 	const busy = (id: string) =>
 		(feedback.isPending && feedback.variables?.id === id) ||
@@ -109,13 +170,49 @@ export function TriagePage() {
 				)}
 			</div>
 
+			{/* Refill the queue without touching a terminal: poll the boards for new
+			    postings, and score open candidates on demand. */}
+			<div className="flex flex-wrap items-center gap-2">
+				<Button
+					size="sm"
+					variant="outline"
+					disabled={poll.isPending}
+					onClick={() => poll.mutate()}
+				>
+					{poll.isPending ? "Polling boards…" : "↻ Poll boards"}
+				</Button>
+				<Button
+					size="sm"
+					disabled={scoreNow.isPending}
+					onClick={() => scoreNow.mutate()}
+				>
+					{scoreNow.isPending ? "Scoring…" : "⚡ Score candidates"}
+				</Button>
+				{poll.data && (
+					<span className="text-slate-500 text-xs">
+						Polled: {poll.data.newCount} new, {poll.data.candidateCount}{" "}
+						candidate(s).
+					</span>
+				)}
+				{scoreNow.data && (
+					<span className="text-slate-500 text-xs">
+						Scored {scoreNow.data.scored} (queued {scoreNow.data.enqueued}
+						{scoreNow.data.failed ? `, ${scoreNow.data.failed} failed` : ""}).
+					</span>
+				)}
+				{(poll.isError || scoreNow.isError) && (
+					<span className="text-red-600 text-xs">
+						Action failed — is the API running and the key set?
+					</span>
+				)}
+			</div>
+
 			{isPending && <p className="text-slate-500">Loading…</p>}
 			{isError && <p className="text-red-600">Failed to load triage.</p>}
 			{data && data.length === 0 && (
 				<p className="text-slate-500">
-					Nothing to triage. Score some candidates:{" "}
-					<code className="text-xs">pnpm --filter api score:enqueue</code> then{" "}
-					<code className="text-xs">score:drain</code>.
+					Nothing to triage. Click <strong>⚡ Score candidates</strong> to score
+					open postings, or <strong>↻ Poll boards</strong> to fetch new ones.
 				</p>
 			)}
 
@@ -194,6 +291,13 @@ export function TriagePage() {
 									Mark applied
 								</Button>
 								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => setTailoring(item)}
+								>
+									✨ Tailor
+								</Button>
+								<Button
 									variant="ghost"
 									size="sm"
 									disabled={busy(item.scoreId)}
@@ -228,6 +332,12 @@ export function TriagePage() {
 					</Card>
 				))}
 			</div>
+
+			<TailorDialog
+				key={tailoring?.jobPostingId ?? "none"}
+				item={tailoring}
+				onClose={() => setTailoring(null)}
+			/>
 		</div>
 	);
 }

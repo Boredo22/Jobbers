@@ -36,6 +36,13 @@
       "when": 1784561367200,
       "tag": "0004_sticky_photon",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784574044369,
+      "tag": "0005_broken_lockjaw",
+      "breakpoints": true
     }
   ]
 }

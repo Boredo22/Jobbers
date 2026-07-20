@@ -10,6 +10,7 @@ export {
 	REVIEW_RESUME_PROMPT,
 	renderPrompt,
 	SCORE_JOB_PROMPT,
+	TAILOR_POSTING_PROMPT,
 } from "./prompts";
 export type {
 	AIProvider,
@@ -18,3 +19,8 @@ export type {
 	ModelTier,
 } from "./provider";
 export { ApiProvider, type ApiProviderOptions } from "./providers/api";
+export { CliProvider, type CliProviderOptions } from "./providers/cli";
+export {
+	CoworkProvider,
+	type CoworkProviderOptions,
+} from "./providers/cowork";

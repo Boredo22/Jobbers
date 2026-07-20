@@ -1,7 +1,10 @@
+import { resolve } from "node:path";
 import {
 	type AIProvider,
 	type AIResult,
 	ApiProvider,
+	CliProvider,
+	CoworkProvider,
 	estimateCostUsd,
 } from "@jobber/ai";
 import { db } from "../db/client";
@@ -20,8 +23,10 @@ import { env } from "./config";
 
 /**
  * Build the configured AI provider. Driven by AI_PROVIDER (step 2.1's
- * abstraction): today only "api" (Mode A) exists; "cli"/"cowork" land in
- * Phase 3 and slot in here without touching any caller.
+ * abstraction): "api" (Mode A) hits Anthropic directly; "cli" (Mode B) shells out
+ * to the `claude` CLI; "cowork" (Mode C) exchanges files with a Cowork session.
+ * Every caller depends only on the AIProvider interface, so this switch is the
+ * ONLY place that knows which backend is live — swapping is a one-env-var change.
  */
 export function createProvider(): AIProvider {
 	switch (env.AI_PROVIDER) {
@@ -33,14 +38,17 @@ export function createProvider(): AIProvider {
 			}
 			return new ApiProvider({ apiKey: env.ANTHROPIC_API_KEY });
 		}
-		default:
-			// cli / cowork arrive in Phase 3 (step 3.3).
-			throw new Error(`AI_PROVIDER "${env.AI_PROVIDER}" not implemented yet.`);
+		case "cli":
+			// No API key needed — runs against the logged-in Claude Code CLI.
+			return new CliProvider({ claudeBin: env.CLAUDE_BIN });
+		case "cowork":
+			// No API key needed — a Cowork session answers the file queue.
+			return new CoworkProvider({ queueDir: resolve(env.AI_QUEUE_DIR) });
 	}
 }
 
 /** Which product feature made the call — matches the ai_runs.feature enum. */
-type AiFeature = "score" | "resume_review" | "profile";
+type AiFeature = "score" | "resume_review" | "profile" | "tailor";
 
 /**
  * Record one AI call in the ai_runs cost/audit ledger. The provider returns the

@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { MODELS } from "../models";
 import type { AIProvider, AIRequest, AIResult } from "../provider";
+import { toStrictInputSchema } from "../schema";
 
 // ---------------------------------------------------------------------------
 // ApiProvider (Mode A) — talk to the Anthropic Messages API directly.
@@ -31,58 +32,6 @@ export interface ApiProviderOptions {
 	models?: typeof MODELS;
 }
 
-/**
- * Convert a Zod schema to the JSON Schema shape the Messages API wants for a
- * tool's `input_schema`. zod v4 ships this natively (`z.toJSONSchema`), so no
- * third-party converter is needed. We drop the `$schema` meta key the tool API
- * doesn't expect; the rest (properties, required, descriptions) passes straight
- * through — which is why the `.describe()` strings on the schema become
- * field-level hints the model actually reads.
- *
- * We also strip the JSON-Schema keywords that *strict* tool use (below) doesn't
- * support — numeric/length/array bounds like `minimum`/`maxLength`/`minItems`.
- * They're only advisory to the model anyway; our own Zod `safeParse` still
- * enforces them after the call, so dropping them here loses nothing.
- */
-const STRICT_UNSUPPORTED = new Set([
-	"minimum",
-	"maximum",
-	"exclusiveMinimum",
-	"exclusiveMaximum",
-	"multipleOf",
-	"minLength",
-	"maxLength",
-	"pattern",
-	"minItems",
-	"maxItems",
-	"uniqueItems",
-	"minProperties",
-	"maxProperties",
-]);
-
-function stripUnsupported(node: unknown): void {
-	if (Array.isArray(node)) {
-		for (const item of node) stripUnsupported(item);
-		return;
-	}
-	if (node && typeof node === "object") {
-		const obj = node as Record<string, unknown>;
-		for (const key of Object.keys(obj)) {
-			if (STRICT_UNSUPPORTED.has(key)) delete obj[key];
-			else stripUnsupported(obj[key]);
-		}
-	}
-}
-
-function toInputSchema(schema: z.ZodType): Anthropic.Tool.InputSchema {
-	const json = z.toJSONSchema(schema) as Record<string, unknown>;
-	delete json.$schema;
-	stripUnsupported(json);
-	// z.toJSONSchema types `type` as a plain string; for an object schema it is
-	// "object", which is exactly what InputSchema requires. The cast asserts that.
-	return json as Anthropic.Tool.InputSchema;
-}
-
 export class ApiProvider implements AIProvider {
 	private readonly client: Anthropic;
 	private readonly models: typeof MODELS;
@@ -103,7 +52,7 @@ export class ApiProvider implements AIProvider {
 		const tool: Anthropic.Tool = {
 			name: req.schemaName,
 			description: `Return the result as structured ${req.schemaName} data.`,
-			input_schema: toInputSchema(req.schema),
+			input_schema: toStrictInputSchema(req.schema),
 			// Strict tool use GUARANTEES the arguments validate against the schema —
 			// the model can't collapse an array into a string or drop a field the way
 			// plain (guided) tool use can. This is what makes structured output

@@ -72,8 +72,18 @@ const EnvSchema = z.object({
 	ANTHROPIC_API_KEY: z.string().optional(),
 
 	// Which AI backend to use (step 2.1's provider abstraction). "api" = Anthropic
-	// Messages API directly; "cli"/"cowork" arrive in Phase 3. Default "api".
+	// Messages API directly; "cli" = shell out to the `claude` CLI (Mode B, no API
+	// key); "cowork" = file-queue for a Cowork session (Mode C, no API key).
+	// Default "api". (Providers built in lib/ai.ts.)
 	AI_PROVIDER: z.enum(["api", "cli", "cowork"]).default("api"),
+
+	// Mode B: the `claude` executable CliProvider runs. Default "claude" (on PATH).
+	CLAUDE_BIN: z.string().default("claude"),
+
+	// Mode C: root of the file queue CoworkProvider reads/writes (pending/ + done/
+	// live under it). Relative paths resolve against the process cwd. Default
+	// "ai-queue" at the repo root.
+	AI_QUEUE_DIR: z.string().default("ai-queue"),
 
 	// Whether the in-process scoring worker drains the scoring_queue on a timer
 	// (step 2.4). Off by default so `tsx watch` restarts don't quietly spend money

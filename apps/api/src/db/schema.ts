@@ -213,6 +213,42 @@ export const applicationEvents = pgTable("application_events", {
 	detail: text("detail"),
 });
 
+// --- tailored_drafts: AI-drafted, per-posting resume edits + outreach note ---
+// One row per saved tailoring run (step 3.2b). Keyed by the posting; linked to
+// the application when one exists ("attached to the application", per the plan).
+// History is kept (no unique constraint) — the UI shows the latest. The edits are
+// stored as jsonb so the diff view can re-render them without re-calling the model.
+export const tailoredDrafts = pgTable("tailored_drafts", {
+	id: uuid("id").defaultRandom().primaryKey(),
+	jobPostingId: uuid("job_posting_id")
+		.notNull()
+		.references(() => jobPostings.id),
+	// Nullable: you can tailor before formally marking the job applied. Filled in
+	// at save time if an application row already exists for this posting.
+	applicationId: uuid("application_id").references(() => applications.id),
+	// Which resume version was tailored (nullable to survive a deleted version).
+	resumeVersionId: uuid("resume_version_id").references(
+		() => resumeVersions.id,
+	),
+	summary: text("summary").notNull(),
+	edits: jsonb("edits")
+		.$type<
+			{
+				section: string;
+				original: string;
+				tailored: string;
+				rationale: string;
+			}[]
+		>()
+		.notNull(),
+	outreachNote: text("outreach_note").notNull(),
+	modelUsed: text("model_used").notNull(),
+	promptVersion: text("prompt_version").notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true })
+		.notNull()
+		.defaultNow(),
+});
+
 // --- poll_runs: one row per poller execution (ops/observability) ------------
 // Feeds the Companies page (which boards are ok / failing) and is the audit
 // trail proving the scheduler ran. Written once at the end of each runPoll().
@@ -235,7 +271,7 @@ export const pollRuns = pgTable("poll_runs", {
 export const aiRuns = pgTable("ai_runs", {
 	id: uuid("id").defaultRandom().primaryKey(),
 	feature: text("feature", {
-		enum: ["score", "resume_review", "profile"],
+		enum: ["score", "resume_review", "profile", "tailor"],
 	}).notNull(),
 	provider: text("provider").notNull(), // api | cli | cowork
 	model: text("model").notNull(),
