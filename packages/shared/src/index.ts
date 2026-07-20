@@ -119,6 +119,45 @@ export const JobsQuerySchema = z.object({
 export type JobsQuery = z.infer<typeof JobsQuerySchema>;
 
 // ---------------------------------------------------------------------------
+// FitScore — the LLM's verdict on how well a posting matches the candidate.
+// This is the *output contract* the scoring model must satisfy: the AI provider
+// forces the model to return exactly this shape (Phase 2, step 2.2), and it maps
+// onto the fit_scores table in apps/api/src/db/schema.ts. The .describe() strings
+// are not decoration — they are converted into the JSON Schema the model sees, so
+// they double as field-level instructions to the LLM.
+// ---------------------------------------------------------------------------
+export const FitScoreSchema = z.object({
+	score: z
+		.number()
+		.min(0)
+		.max(10)
+		.describe(
+			"Overall fit, 0–10. Anchors: 5 = plausible but clear gaps; 8 = strong match worth applying to today; 10 = near-perfect. Decimals allowed.",
+		),
+	matchPoints: z
+		.array(z.string())
+		.describe(
+			"Concrete reasons this role fits the candidate — skills, domain, seniority, or constraints that line up. 2–5 short bullet strings.",
+		),
+	gaps: z
+		.array(z.string())
+		.describe(
+			"Concrete mismatches or risks — missing skills, seniority mismatch, unclear remote/comp. 0–5 short bullet strings.",
+		),
+	credentialGapFlag: z
+		.boolean()
+		.describe(
+			"True if the posting hard-requires a credential the candidate lacks (e.g. CS degree, N years of ML, live coding gate).",
+		),
+	rationale: z
+		.string()
+		.describe(
+			"2–4 sentence plain-English explanation of the score, for a human triaging quickly.",
+		),
+});
+export type FitScore = z.infer<typeof FitScoreSchema>;
+
+// ---------------------------------------------------------------------------
 // Application — your pipeline. The event log is the truth; `status` is a fast
 // denormalized mirror of it (see the tracker module + docs/notes/step-1.6.md).
 // These enums mirror the DB enums in apps/api/src/db/schema.ts — schema.ts owns

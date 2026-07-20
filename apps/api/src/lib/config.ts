@@ -64,6 +64,16 @@ const EnvSchema = z.object({
 	// z.coerce.number turns the string env value into a number; the default
 	// applies when PORT is unset.
 	PORT: z.coerce.number().int().positive().default(3001),
+
+	// Anthropic API key for Mode A scoring (step 2.2). Optional so the server and
+	// one-off scripts boot without it; the AI provider throws a clear error the
+	// moment it's actually used without a key, rather than failing at startup.
+	// This key never reaches the browser — only the API talks to Anthropic.
+	ANTHROPIC_API_KEY: z.string().optional(),
+
+	// Which AI backend to use (step 2.1's provider abstraction). "api" = Anthropic
+	// Messages API directly; "cli"/"cowork" arrive in Phase 3. Default "api".
+	AI_PROVIDER: z.enum(["api", "cli", "cowork"]).default("api"),
 });
 
 // `.parse` throws a readable ZodError listing exactly which vars are missing or

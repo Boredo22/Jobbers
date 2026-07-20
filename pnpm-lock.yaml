@@ -17,6 +17,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@jobber/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@jobber/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -127,9 +130,6 @@ importers:
       zod:
         specifier: ^4.4.3
         version: 4.4.3
-      zod-to-json-schema:
-        specifier: ^3.24.6
-        version: 3.25.2(zod@4.4.3)
 
   packages/shared:
     dependencies:
@@ -1760,11 +1760,6 @@ packages:
     resolution: {integrity: sha512-4LCcse/U2MHZ63HAJVE+v71o7yOdIe4cZ70Wpf8D/IyjDKYQLV5GD46B+hSTjJsvV5PztjvHoU580EftxjDZFQ==}
     engines: {node: '>=12.20'}
 
-  zod-to-json-schema@3.25.2:
-    resolution: {integrity: sha512-O/PgfnpT1xKSDeQYSCfRI5Gy3hPf91mKVDuYLUHZJMiDFptvP41MSnWofm8dnCm0256ZNfZIM7DSzuSMAFnjHA==}
-    peerDependencies:
-      zod: ^3.25.28 || ^4
-
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
@@ -2946,9 +2941,5 @@ snapshots:
   yaml@2.9.0: {}
 
   yocto-queue@1.2.2: {}
-
-  zod-to-json-schema@3.25.2(zod@4.4.3):
-    dependencies:
-      zod: 4.4.3
 
   zod@4.4.3: {}

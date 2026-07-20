@@ -10,9 +10,11 @@
 		"db:migrate": "drizzle-kit migrate",
 		"seed": "tsx src/scripts/seed.ts",
 		"import:applications": "tsx src/scripts/import-applications.ts",
-		"validate-tokens": "tsx src/scripts/validate-tokens.ts"
+		"validate-tokens": "tsx src/scripts/validate-tokens.ts",
+		"score:one": "tsx src/scripts/score-one.ts"
 	},
 	"dependencies": {
+		"@jobber/ai": "workspace:*",
 		"@jobber/shared": "workspace:*",
 		"drizzle-orm": "^0.45.2",
 		"fastify": "^5.10.0",
