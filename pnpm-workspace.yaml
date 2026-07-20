@@ -5,4 +5,6 @@ packages:
 # esbuild ships a native binary built via a postinstall script; tsx/drizzle-kit
 # need it. pnpm blocks install scripts by default (supply-chain safety); we opt in.
 allowBuilds:
+  # core-js's postinstall only prints a funding banner — nothing to build.
+  core-js: false
   esbuild: true
