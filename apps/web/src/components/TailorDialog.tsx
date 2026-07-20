@@ -20,6 +20,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { apiGet, apiSend } from "@/lib/api";
+import { fileToken, markdownToDocxBlob, saveBlobAs } from "@/lib/docx";
 
 // ---------------------------------------------------------------------------
 // TailorDialog — the tailor-to-posting flow (step 3.2b + tailor-v2), opened from
@@ -43,6 +44,11 @@ const GenerateResponseSchema = z.object({
 	draft: TailoredDraftSchema,
 	resumeVersionId: z.string().uuid(),
 });
+
+// The name on the resume, used as the .docx filename prefix:
+// MichaelBrown_Company_JobName.docx. Not stored anywhere in the app (the
+// "profile" is a job rubric, not personal info), so it lives here.
+const RESUME_OWNER = "MichaelBrown";
 
 // A filename-safe version of "Company — Title" for the downloaded .md.
 function safeFilename(name: string): string {
@@ -164,6 +170,22 @@ export function TailorDialog({
 	// editable text for download. Cleared whenever a new draft is generated.
 	const [assembled, setAssembled] = useState<TailorAssembleResult | null>(null);
 	const [assembledText, setAssembledText] = useState("");
+	// .docx export status — building the file + the save dialog are async.
+	const [docxState, setDocxState] = useState<"idle" | "busy" | "error">("idle");
+
+	// Build the .docx from the (possibly hand-edited) assembled text, then ask
+	// where to save it. Cancelling the save dialog is a no-op, not an error.
+	async function downloadDocx(target: TailorTarget): Promise<void> {
+		setDocxState("busy");
+		try {
+			const blob = await markdownToDocxBlob(assembledText);
+			const filename = `${RESUME_OWNER}_${fileToken(target.companyName)}_${fileToken(target.title)}.docx`;
+			await saveBlobAs(blob, filename);
+			setDocxState("idle");
+		} catch {
+			setDocxState("error");
+		}
+	}
 
 	// Bases to choose from (tailored versions aren't valid bases to tailor from).
 	const resumes = useQuery({
@@ -489,6 +511,21 @@ export function TailorDialog({
 											>
 												Download .md
 											</Button>
+											<Button
+												variant="outline"
+												size="sm"
+												disabled={docxState === "busy"}
+												onClick={() => downloadDocx(item)}
+											>
+												{docxState === "busy"
+													? "Preparing…"
+													: "⬇ Download .docx"}
+											</Button>
+											{docxState === "error" && (
+												<span className="text-red-600 text-sm">
+													.docx export failed.
+												</span>
+											)}
 											<span className="text-green-700 text-sm">
 												✓ Saved as a tailored resume version + linked to the
 												application.
