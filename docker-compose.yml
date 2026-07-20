@@ -1,6 +1,8 @@
-# Dev flavor: ONLY Postgres runs in Docker.
-# The api and web dev servers run directly on your machine for instant hot-reload.
-# The full 3-container "deployed" stack (api + web) is added in Phase 8.
+# Dev flavor+: Postgres AND an always-on api container run in Docker.
+# The api/web *dev* servers still run directly on your machine for hot-reload;
+# the `api` service below is the automation twin — it exists so the twice-daily
+# poll cron and the scoring worker fire even with no dev terminal open.
+# The full 3-container "deployed" stack (adding web) is still Phase 8.
 services:
   db:
     image: postgres:16
@@ -22,6 +24,35 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+
+  api:
+    build:
+      # Context is the repo root, not apps/api — the image needs the workspace
+      # packages (@jobber/shared, @jobber/ai) and the root lockfile.
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: jobber-api
+    restart: unless-stopped # survives reboots; this is the whole point
+    depends_on:
+      db:
+        condition: service_healthy
+    # Reuse the root .env for secrets (NTFY_URL, ANTHROPIC_API_KEY, AI_PROVIDER…)
+    # so there's still exactly one place credentials live.
+    env_file: .env
+    environment:
+      # Overrides on top of .env — `environment` wins over `env_file`.
+      # Inside the compose network the db is reached as `db:5432`; the .env
+      # value (localhost:5433) is the host's view and would dial nothing here.
+      DATABASE_URL: postgres://jobber:${DB_PASSWORD}@db:5432/jobber
+      # The reason this container exists: automation ON, always — regardless of
+      # the "keep false in dev" guidance that applies to the tsx-watch process.
+      POLL_SCHEDULE_ENABLED: "true"
+      SCORING_WORKER_ENABLED: "true"
+    ports:
+      # Host 3002, NOT 3001: the tsx-watch dev api keeps 3001 (and the Vite
+      # proxy keeps pointing at it). 3002 is only for poking the twin directly,
+      # e.g. curl localhost:3002/api/health.
+      - "3002:3001"
 
 volumes:
   dbdata:

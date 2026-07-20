@@ -1,0 +1,10 @@
+# Keep the Docker build context small and platform-clean. node_modules in
+# particular must never be copied in: the host's tree contains Windows-native
+# binaries (esbuild etc.) that would shadow the Linux ones pnpm installs
+# inside the container.
+node_modules
+**/node_modules
+.git
+**/dist
+.env
+ai-queue

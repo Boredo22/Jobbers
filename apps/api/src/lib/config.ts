@@ -39,6 +39,14 @@ if (!process.env.DATABASE_URL) {
 	if (envFile) process.loadEnvFile(envFile);
 }
 
+/**
+ * Treat an empty-string env value as "unset". Docker Compose's `env_file`
+ * passes blank lines like `NTFY_URL=` through as "" (unlike a plain shell,
+ * where the var simply wouldn't exist) — without this, "" would fail
+ * z.string().url() at startup even though the intent was clearly "no ntfy".
+ */
+const emptyAsUndefined = (v: unknown) => (v === "" ? undefined : v);
+
 const EnvSchema = z.object({
 	// The postgres.js connection string, e.g.
 	// postgres://jobber:<password>@localhost:5432/jobber
@@ -48,7 +56,7 @@ const EnvSchema = z.object({
 	// https://ntfy.sh/jobber-<random>. Optional: leave it unset and notify()
 	// becomes a no-op, so the poller runs fine on a machine with no phone
 	// attached. When set it must be a real URL (validated, not silently ignored).
-	NTFY_URL: z.string().url().optional(),
+	NTFY_URL: z.preprocess(emptyAsUndefined, z.string().url().optional()),
 
 	// Whether the in-process cron scheduler arms itself on boot (step 1.5).
 	// Off by default so `tsx watch` restarts and one-off scripts don't quietly
@@ -62,28 +70,34 @@ const EnvSchema = z.object({
 
 	// Port the API listens on. Defaults to 3001 (matches the Vite dev proxy).
 	// z.coerce.number turns the string env value into a number; the default
-	// applies when PORT is unset.
-	PORT: z.coerce.number().int().positive().default(3001),
+	// applies when PORT is unset (or blank — see emptyAsUndefined).
+	PORT: z.preprocess(
+		emptyAsUndefined,
+		z.coerce.number().int().positive().default(3001),
+	),
 
 	// Anthropic API key for Mode A scoring (step 2.2). Optional so the server and
 	// one-off scripts boot without it; the AI provider throws a clear error the
 	// moment it's actually used without a key, rather than failing at startup.
 	// This key never reaches the browser — only the API talks to Anthropic.
-	ANTHROPIC_API_KEY: z.string().optional(),
+	ANTHROPIC_API_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
 
 	// Which AI backend to use (step 2.1's provider abstraction). "api" = Anthropic
 	// Messages API directly; "cli" = shell out to the `claude` CLI (Mode B, no API
 	// key); "cowork" = file-queue for a Cowork session (Mode C, no API key).
 	// Default "api". (Providers built in lib/ai.ts.)
-	AI_PROVIDER: z.enum(["api", "cli", "cowork"]).default("api"),
+	AI_PROVIDER: z.preprocess(
+		emptyAsUndefined,
+		z.enum(["api", "cli", "cowork"]).default("api"),
+	),
 
 	// Mode B: the `claude` executable CliProvider runs. Default "claude" (on PATH).
-	CLAUDE_BIN: z.string().default("claude"),
+	CLAUDE_BIN: z.preprocess(emptyAsUndefined, z.string().default("claude")),
 
 	// Mode C: root of the file queue CoworkProvider reads/writes (pending/ + done/
 	// live under it). Relative paths resolve against the process cwd. Default
 	// "ai-queue" at the repo root.
-	AI_QUEUE_DIR: z.string().default("ai-queue"),
+	AI_QUEUE_DIR: z.preprocess(emptyAsUndefined, z.string().default("ai-queue")),
 
 	// Whether the in-process scoring worker drains the scoring_queue on a timer
 	// (step 2.4). Off by default so `tsx watch` restarts don't quietly spend money

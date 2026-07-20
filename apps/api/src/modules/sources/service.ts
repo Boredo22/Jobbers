@@ -2,6 +2,7 @@ import type { SourceSummary } from "@jobber/shared";
 import { desc, sql } from "drizzle-orm";
 import { db } from "../../db/client";
 import { companies, jobPostings, pollRuns } from "../../db/schema";
+import { env } from "../../lib/config";
 
 // ---------------------------------------------------------------------------
 // sources/service.ts — the ingestion registry behind the Settings page.
@@ -99,7 +100,13 @@ export async function listSources(): Promise<SourceSummary[]> {
 			health: poller.health,
 			lastRunAt: poller.lastRunAt,
 			lastRunNew: poller.lastRunNew,
-			schedule: "Twice daily · 08:00 & 14:00 America/New_York",
+			// Tell the truth about automation: the schedule only fires in a process
+			// where the cron is armed. In the dev api (flag off) the polls come from
+			// the jobber-api container — or from the manual button; "last run" above
+			// is the evidence either way.
+			schedule: env.POLL_SCHEDULE_ENABLED
+				? "Twice daily · 08:00 & 14:00 America/New_York"
+				: "Scheduler off in this process — runs in the jobber-api container (check last run), or poll manually",
 		},
 		{
 			key: "hn",
