@@ -477,6 +477,25 @@ export const TailorRequestSchema = z.object({
 });
 export type TailorRequest = z.infer<typeof TailorRequestSchema>;
 
+// POST /api/postings/:id/tailor/resume body (tailor-v2, step T3). Assembles the
+// reviewed draft's edits onto the base into a full tailored resume_versions row.
+// No AI — pure, deterministic replacement, so it works offline.
+export const TailorAssembleRequestSchema = z.object({
+	draft: TailoredDraftSchema,
+	resumeVersionId: z.string().uuid(), // the base the edits quote from
+	label: z.string().optional(), // defaults to "<Company> — <Title>"
+});
+export type TailorAssembleRequest = z.infer<typeof TailorAssembleRequestSchema>;
+
+// The assemble result: the new tailored resume version, plus any edits whose
+// `original` couldn't be found verbatim in the base — surfaced, never dropped, so
+// the human can place them by hand.
+export const TailorAssembleResultSchema = z.object({
+	resume: ResumeDetailSchema,
+	failed: z.array(TailorEditSchema),
+});
+export type TailorAssembleResult = z.infer<typeof TailorAssembleResultSchema>;
+
 // ---------------------------------------------------------------------------
 // Application — your pipeline. The event log is the truth; `status` is a fast
 // denormalized mirror of it (see the tracker module + docs/notes/step-1.6.md).

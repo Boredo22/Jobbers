@@ -1,5 +1,7 @@
 import { promptVersion, renderPrompt, TAILOR_POSTING_PROMPT } from "@jobber/ai";
 import {
+	type ResumeDetail,
+	type TailorAssembleResult,
 	type TailoredDraft,
 	type TailoredDraftRecord,
 	TailoredDraftSchema,
@@ -17,6 +19,7 @@ import {
 	tailoredDrafts,
 } from "../../db/schema";
 import { createProvider, logAiRun } from "../../lib/ai";
+import { applyEdits } from "./assemble";
 
 // ---------------------------------------------------------------------------
 // tailor/service.ts — tailor-to-posting (Phase 3, step 3.2b).
@@ -301,6 +304,82 @@ export async function saveTailoredDraft(
 		.returning();
 	if (!row) throw new Error("saveTailoredDraft: insert returned no row");
 	return toRecord(row);
+}
+
+/**
+ * Assemble a reviewed draft onto its base into a new tailored resume version.
+ * No AI — pure text replacement (applyEdits), so it works offline. Inserts a
+ * `resume_versions` row (kind "tailored", never active, parented to the base and
+ * tagged with the posting) and, if an application already exists for the posting,
+ * points it at the new version (tie-in #3 — "which resume went out" finally
+ * recorded). Insert + link run in one transaction. Throws on unknown
+ * posting / ResumeNotFoundError so a tailored row can't dangle off nothing.
+ */
+export async function assembleTailoredResume(
+	jobPostingId: string,
+	opts: { draft: TailoredDraft; resumeVersionId: string; label?: string },
+): Promise<TailorAssembleResult> {
+	const posting = await loadPosting(jobPostingId);
+	if (!posting)
+		throw new Error(
+			`assembleTailoredResume: posting ${jobPostingId} not found`,
+		);
+
+	// The base whose text the edits quote from — must still exist.
+	const [base] = await db
+		.select({ text: resumeVersions.extractedText })
+		.from(resumeVersions)
+		.where(eq(resumeVersions.id, opts.resumeVersionId))
+		.limit(1);
+	if (!base) throw new ResumeNotFoundError(opts.resumeVersionId);
+
+	const { text, failed } = applyEdits(base.text, opts.draft.edits);
+	const label = opts.label ?? `${posting.companyName} — ${posting.title}`;
+
+	const detail = await db.transaction(async (tx) => {
+		const [row] = await tx
+			.insert(resumeVersions)
+			.values({
+				label,
+				extractedText: text,
+				active: false, // tailored versions never become the scorer's resume
+				kind: "tailored",
+				parentId: opts.resumeVersionId,
+				jobPostingId,
+			})
+			.returning();
+		if (!row) throw new Error("assembleTailoredResume: insert returned no row");
+
+		// Link the newest application for this posting (if any) to the exact doc
+		// that went out — mirrors saveTailoredDraft's "newest first" attach.
+		const [app] = await tx
+			.select({ id: applications.id })
+			.from(applications)
+			.where(eq(applications.jobPostingId, jobPostingId))
+			.orderBy(desc(applications.appliedAt))
+			.limit(1);
+		if (app) {
+			await tx
+				.update(applications)
+				.set({ resumeVersionId: row.id })
+				.where(eq(applications.id, app.id));
+		}
+
+		const resume: ResumeDetail = {
+			id: row.id,
+			label: row.label,
+			active: row.active,
+			kind: row.kind,
+			parentId: row.parentId,
+			jobPostingId: row.jobPostingId,
+			charCount: row.extractedText.length,
+			createdAt: row.createdAt,
+			extractedText: row.extractedText,
+		};
+		return resume;
+	});
+
+	return { resume: detail, failed };
 }
 
 /** The latest saved draft for a posting, or null if none has been saved. */

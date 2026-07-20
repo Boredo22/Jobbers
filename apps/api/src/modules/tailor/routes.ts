@@ -1,4 +1,6 @@
 import {
+	TailorAssembleRequestSchema,
+	TailorAssembleResultSchema,
 	TailoredDraftRecordSchema,
 	TailoredDraftSchema,
 	TailorRequestSchema,
@@ -7,6 +9,7 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import {
+	assembleTailoredResume,
 	latestDraftForPosting,
 	NoActiveResumeError,
 	ResumeNotFoundError,
@@ -97,6 +100,39 @@ export async function tailorRoutes(app: FastifyInstance): Promise<void> {
 				reply.code(201);
 				return saved;
 			} catch (err) {
+				if (err instanceof Error && err.message.includes("not found")) {
+					return reply.code(404).send({ message: "posting not found" });
+				}
+				throw err;
+			}
+		},
+	);
+
+	// Assemble a reviewed draft onto its base → a full tailored resume version.
+	// No AI (pure text replacement). 404 unknown posting/base resume.
+	r.post(
+		"/api/postings/:id/tailor/resume",
+		{
+			schema: {
+				params,
+				body: TailorAssembleRequestSchema,
+				response: { 201: TailorAssembleResultSchema, 404: errorBody },
+			},
+		},
+		async (req, reply) => {
+			try {
+				const { draft, resumeVersionId, label } = req.body;
+				const result = await assembleTailoredResume(req.params.id, {
+					draft,
+					resumeVersionId,
+					label,
+				});
+				reply.code(201);
+				return result;
+			} catch (err) {
+				if (err instanceof ResumeNotFoundError) {
+					return reply.code(404).send({ message: err.message });
+				}
 				if (err instanceof Error && err.message.includes("not found")) {
 					return reply.code(404).send({ message: "posting not found" });
 				}
