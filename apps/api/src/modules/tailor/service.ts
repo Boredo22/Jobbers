@@ -170,6 +170,7 @@ function toRecord(
 		resumeVersionId: row.resumeVersionId,
 		summary: row.summary,
 		edits: row.edits,
+		keywords: row.keywords,
 		outreachNote: row.outreachNote,
 		modelUsed: row.modelUsed,
 		promptVersion: row.promptVersion,
@@ -211,6 +212,7 @@ export async function saveTailoredDraft(
 			resumeVersionId: resume.id,
 			summary: draft.summary,
 			edits: draft.edits,
+			keywords: draft.keywords,
 			outreachNote: draft.outreachNote,
 			modelUsed: "human-edited", // the saved copy may differ from the raw model output
 			promptVersion: promptVersion(TAILOR_POSTING_PROMPT),

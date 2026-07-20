@@ -75,7 +75,13 @@ export async function extractText(
 function toResumeVersion(
 	row: Pick<
 		typeof resumeVersions.$inferSelect,
-		"id" | "label" | "active" | "createdAt"
+		| "id"
+		| "label"
+		| "active"
+		| "kind"
+		| "parentId"
+		| "jobPostingId"
+		| "createdAt"
 	>,
 	charCount: number,
 ): ResumeVersion {
@@ -83,6 +89,9 @@ function toResumeVersion(
 		id: row.id,
 		label: row.label,
 		active: row.active,
+		kind: row.kind,
+		parentId: row.parentId,
+		jobPostingId: row.jobPostingId,
 		charCount,
 		createdAt: row.createdAt,
 	};
@@ -132,6 +141,9 @@ export async function listResumes(): Promise<ResumeVersion[]> {
 			id: resumeVersions.id,
 			label: resumeVersions.label,
 			active: resumeVersions.active,
+			kind: resumeVersions.kind,
+			parentId: resumeVersions.parentId,
+			jobPostingId: resumeVersions.jobPostingId,
 			createdAt: resumeVersions.createdAt,
 			charCount: sql<number>`length(${resumeVersions.extractedText})::int`,
 		})

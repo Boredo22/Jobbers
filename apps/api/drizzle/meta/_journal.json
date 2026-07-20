@@ -57,6 +57,13 @@
       "when": 1784577261168,
       "tag": "0007_violet_liz_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784580885731,
+      "tag": "0008_zippy_puck",
+      "breakpoints": true
     }
   ]
 }

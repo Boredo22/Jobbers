@@ -332,10 +332,19 @@ export type ProfilePropose = z.infer<typeof ProfileProposeSchema>;
 // row (extracted text + metadata); one is "active" and feeds the scorer and the
 // profile-proposer. The list returns metadata only; the detail adds the text.
 // ---------------------------------------------------------------------------
+// "base" = an uploaded resume the scorer reads; "tailored" = a per-posting
+// variant assembled from a base + reviewed edits (tailor-v2). Only bases active.
+export const ResumeKindSchema = z.enum(["base", "tailored"]);
+export type ResumeKind = z.infer<typeof ResumeKindSchema>;
+
 export const ResumeVersionSchema = z.object({
 	id: z.string().uuid(),
 	label: z.string(),
 	active: z.boolean(),
+	kind: ResumeKindSchema,
+	// Set on tailored rows: the base it was derived from and the posting it targets.
+	parentId: z.string().uuid().nullable(),
+	jobPostingId: z.string().uuid().nullable(),
 	charCount: z.number().int(),
 	createdAt: z.coerce.date(),
 });
@@ -405,6 +414,22 @@ export const TailorEditSchema = z.object({
 });
 export type TailorEdit = z.infer<typeof TailorEditSchema>;
 
+// One entry in the keyword-coverage map (tailor-v2). The model pulls the most
+// screening-relevant terms VERBATIM from the ad and marks whether the resume
+// already truthfully supports each — the honest-gap guarantee made structural.
+export const KeywordHitSchema = z.object({
+	keyword: z.string().describe("Verbatim term/phrase from the job ad."),
+	covered: z
+		.boolean()
+		.describe("Does the resume already truthfully support it?"),
+	note: z
+		.string()
+		.describe(
+			"If covered: where in the resume. If not: how to honestly address it — or 'genuine gap, do not fake'.",
+		),
+});
+export type KeywordHit = z.infer<typeof KeywordHitSchema>;
+
 // The AI output contract for a tailoring run (large tier).
 export const TailoredDraftSchema = z.object({
 	summary: z
@@ -416,6 +441,11 @@ export const TailoredDraftSchema = z.object({
 		.array(TailorEditSchema)
 		.describe(
 			"Concrete before/after resume edits — 3–6 high-impact ones, not a full rewrite.",
+		),
+	keywords: z
+		.array(KeywordHitSchema)
+		.describe(
+			"8–15 screening-relevant terms pulled verbatim from the ad, each marked covered/not against the resume.",
 		),
 	outreachNote: z
 		.string()
@@ -437,6 +467,15 @@ export const TailoredDraftRecordSchema = TailoredDraftSchema.extend({
 	createdAt: z.coerce.date(),
 });
 export type TailoredDraftRecord = z.infer<typeof TailoredDraftRecordSchema>;
+
+// POST /api/postings/:id/tailor body (tailor-v2). Both optional — the service
+// resolves the base deterministically: explicit resumeVersionId → the track's
+// (profileId's) own resume → the globally active resume.
+export const TailorRequestSchema = z.object({
+	resumeVersionId: z.string().uuid().optional(),
+	profileId: z.string().uuid().optional(),
+});
+export type TailorRequest = z.infer<typeof TailorRequestSchema>;
 
 // ---------------------------------------------------------------------------
 // Application — your pipeline. The event log is the truth; `status` is a fast

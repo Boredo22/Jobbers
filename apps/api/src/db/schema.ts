@@ -1,3 +1,4 @@
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import {
 	boolean,
 	integer,
@@ -53,6 +54,18 @@ export const resumeVersions = pgTable("resume_versions", {
 	filePath: text("file_path"), // stored file on the data volume (Phase 3)
 	extractedText: text("extracted_text").notNull(),
 	active: boolean("active").notNull().default(false),
+	// "base" = an uploaded/hand-authored resume the scorer reads; "tailored" = a
+	// per-posting variant assembled from a base + reviewed edits (tailor-v2). Only
+	// bases are ever `active`; tailored rows are downloadable drafts, not scored.
+	kind: text("kind", { enum: ["base", "tailored"] })
+		.notNull()
+		.default("base"),
+	// For a tailored row: the base version it was derived from. Self-reference, so
+	// Drizzle needs the AnyPgColumn callback form (the table isn't fully typed yet
+	// at the point this line is evaluated). Null for bases.
+	parentId: uuid("parent_id").references((): AnyPgColumn => resumeVersions.id),
+	// For a tailored row: which posting it was tailored for. Null for bases.
+	jobPostingId: uuid("job_posting_id").references(() => jobPostings.id),
 	createdAt: timestamp("created_at", { withTimezone: true })
 		.notNull()
 		.defaultNow(),
@@ -275,6 +288,12 @@ export const tailoredDrafts = pgTable("tailored_drafts", {
 		>()
 		.notNull(),
 	outreachNote: text("outreach_note").notNull(),
+	// The keyword-coverage map (tailor-v2): terms pulled verbatim from the ad, each
+	// marked covered/not against the resume. Default [] so pre-v2 rows read cleanly.
+	keywords: jsonb("keywords")
+		.$type<{ keyword: string; covered: boolean; note: string }[]>()
+		.notNull()
+		.default([]),
 	modelUsed: text("model_used").notNull(),
 	promptVersion: text("prompt_version").notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true })
