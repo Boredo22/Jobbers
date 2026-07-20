@@ -58,15 +58,38 @@ export const resumeVersions = pgTable("resume_versions", {
 		.defaultNow(),
 });
 
+// --- profiles: a named scoring TRACK (step: multi-profile) ------------------
+// One row per lens you score jobs through (e.g. "AI Implementation", "Business
+// Analyst"). Each track owns its own resume and its own version history in
+// profile_versions; multiple can be `active` at once, and every active track
+// scores every candidate — so a job gets one fit_score per active track.
+export const profiles = pgTable("profiles", {
+	id: uuid("id").defaultRandom().primaryKey(),
+	name: text("name").notNull().unique(),
+	// The resume this track tailors/scores against (its own, per the design).
+	// Nullable → falls back to the globally-active resume when unset.
+	resumeVersionId: uuid("resume_version_id").references(() => resumeVersions.id),
+	// Whether this track is scored. Multiple active tracks = multi-lens scoring.
+	active: boolean("active").notNull().default(true),
+	createdAt: timestamp("created_at", { withTimezone: true })
+		.notNull()
+		.defaultNow(),
+});
+
 // --- profile_versions: the versioned Ideal Job Profile (build plan §5.3) ----
 export const profileVersions = pgTable("profile_versions", {
 	id: uuid("id").defaultRandom().primaryKey(),
-	version: integer("version").notNull().unique(), // human-facing v1, v2, …
+	// Which track this version belongs to. Nullable only to ease the backfill
+	// migration (old rows are linked to the default track by a one-off script);
+	// the app always sets it on new versions.
+	profileId: uuid("profile_id").references(() => profiles.id),
+	version: integer("version").notNull().unique(), // human-facing v1, v2, … (global)
 	northStar: text("north_star").notNull(), // the prose statement
 	rubric: jsonb("rubric").$type<{
 		hardFilters: Record<string, unknown>;
 		criteria: { name: string; weight: number; description: string }[];
 	}>(), // the weighted grading key the scorer consumes
+	// The active VERSION within its track (one active version per profile).
 	active: boolean("active").notNull().default(false),
 	createdAt: timestamp("created_at", { withTimezone: true })
 		.notNull()
@@ -122,6 +145,10 @@ export const fitScores = pgTable("fit_scores", {
 	profileVersionId: uuid("profile_version_id").references(
 		() => profileVersions.id,
 	),
+	// Which track graded it (denormalized from profileVersionId's profile, so
+	// triage can filter by track cheaply). Nullable for pre-multi-profile scores;
+	// backfilled to the default track and always set on new scores.
+	profileId: uuid("profile_id").references(() => profiles.id),
 	score: real("score").notNull(), // 0–10, decimals allowed (e.g. 9.1)
 	matchPoints: jsonb("match_points").$type<string[]>().notNull(),
 	gaps: jsonb("gaps").$type<string[]>().notNull(),

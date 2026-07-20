@@ -50,6 +50,13 @@
       "when": 1784576812229,
       "tag": "0006_unusual_magus",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784577261168,
+      "tag": "0007_violet_liz_osborn",
+      "breakpoints": true
     }
   ]
 }

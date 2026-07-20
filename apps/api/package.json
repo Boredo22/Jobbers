@@ -9,6 +9,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"seed": "tsx src/scripts/seed.ts",
+		"backfill:profiles": "tsx src/scripts/backfill-profiles.ts",
 		"import:applications": "tsx src/scripts/import-applications.ts",
 		"validate-tokens": "tsx src/scripts/validate-tokens.ts",
 		"score:one": "tsx src/scripts/score-one.ts",
