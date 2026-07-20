@@ -1,26 +1,31 @@
+import { renderPrompt, SCORE_JOB_PROMPT } from "@jobber/ai";
 import { FitScoreSchema } from "@jobber/shared";
 import { queryClient } from "../db/client";
 import { createProvider, logAiRun } from "../lib/ai";
 
 // ---------------------------------------------------------------------------
-// score-one.ts — the step 2.2 checkpoint. Scores ONE hardcoded job description
-// against a tiny inline profile, proving the whole Mode A path end to end:
-// prompt → forced tool use → schema-validated FitScore → ai_runs ledger row.
+// score-one.ts — the step 2.2 checkpoint, upgraded in 2.3 to render the prompt
+// from the versioned file instead of an inline string. Proves the whole Mode A
+// path end to end: file-based prompt → forced tool use → schema-validated
+// FitScore → ai_runs ledger row.
 //
 // Run:  pnpm --filter api score:one   (needs ANTHROPIC_API_KEY in .env)
 //
-// The prompt here is inline and minimal on purpose — versioned prompt FILES and
-// the real profile/resume assembly arrive in steps 2.3–2.4. This script exists
-// only to exercise the provider and confirm sane token counts land in ai_runs.
+// The profile/resume/jd fixtures below stand in for the real active
+// profile/resume assembly, which the scoring module wires up in step 2.4.
 // ---------------------------------------------------------------------------
 
-const CANDIDATE = `
-Candidate summary: Backend/data engineer, ~4 years, strong Python (Flask/FastAPI),
-Postgres, Docker; currently learning TypeScript/React. Wants remote, IC role,
-comp floor ~$140k. No CS degree. Interested in AI-enablement / applied-AI work.
+const PROFILE = `
+Aiming for a remote, individual-contributor engineering role in applied AI /
+AI-enablement. Hard constraints: remote required; comp floor ~$140k. No CS degree.
 `.trim();
 
-const JOB = `
+const RESUME = `
+Backend/data engineer, ~4 years. Strong Python (Flask/FastAPI), Postgres, Docker.
+Shipped internal data services and ETL. Currently learning TypeScript/React.
+`.trim();
+
+const JD = `
 Title: AI Solutions Engineer (Remote, US)
 Company: Acme AI
 We're hiring an engineer to build LLM-powered internal tools. You'll ship Python
@@ -29,22 +34,18 @@ agents. Remote-first. Comp: $150k–$190k + equity. Nice to have: TypeScript,
 Postgres. No degree requirement — we hire for demonstrated ability.
 `.trim();
 
-const PROMPT = `You are screening a job posting for a specific candidate. Score how well
-the ROLE fits the CANDIDATE using the fit_score tool. Be calibrated: 5 = plausible
-with real gaps, 8 = strong match worth applying to today, 10 = near-perfect. Flag a
-credential gap only if the posting hard-requires something the candidate lacks.
-
-CANDIDATE:
-${CANDIDATE}
-
-JOB POSTING:
-${JOB}`;
-
 async function main() {
 	const provider = createProvider();
 
+	// Render the versioned scoring prompt with the fixtures filled in.
+	const prompt = renderPrompt(SCORE_JOB_PROMPT, {
+		profile: PROFILE,
+		resume: RESUME,
+		jd: JD,
+	});
+
 	const result = await provider.complete({
-		prompt: PROMPT,
+		prompt,
 		schema: FitScoreSchema,
 		schemaName: "fit_score",
 		tier: "small",

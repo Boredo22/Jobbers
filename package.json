@@ -9,6 +9,7 @@
 	"scripts": {
 		"dev": "pnpm --parallel --filter \"./apps/*\" dev",
 		"typecheck": "pnpm -r typecheck",
+		"test": "pnpm -r test",
 		"check": "biome check --write ."
 	},
 	"devDependencies": {
