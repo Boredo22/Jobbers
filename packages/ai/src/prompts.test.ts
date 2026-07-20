@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { promptVersion, renderPrompt, SCORE_JOB_PROMPT } from "./prompts";
+import {
+	promptVersion,
+	renderPrompt,
+	SCORE_JOB_PROMPT,
+	TAILOR_POSTING_PROMPT,
+} from "./prompts";
 
 // ---------------------------------------------------------------------------
 // prompts.test.ts — the project's first unit test. Prompt rendering is a pure,
@@ -32,6 +37,20 @@ describe("renderPrompt", () => {
 				resume: "r",
 			}),
 		).toThrow(/\{\{jd\}\}/);
+	});
+
+	it("substitutes every placeholder in the real v2 tailor prompt", () => {
+		// The v2 tailor prompt (keyword map + selectable base) has the same three
+		// placeholders as scoring; this guards the shipped file's shape.
+		const out = renderPrompt(TAILOR_POSTING_PROMPT, {
+			profile: "PROFILE_TEXT",
+			jd: "JD_TEXT",
+			resume: "RESUME_TEXT",
+		});
+		expect(out).toContain("PROFILE_TEXT");
+		expect(out).toContain("JD_TEXT");
+		expect(out).toContain("RESUME_TEXT");
+		expect(out).not.toMatch(/\{\{\w+\}\}/);
 	});
 });
 

@@ -32,8 +32,12 @@ export const PROPOSE_PROFILE_PROMPT = "propose-profile.v1.md";
 /** The current "review a resume" prompt (Phase 3, step 3.2). */
 export const REVIEW_RESUME_PROMPT = "review-resume.v1.md";
 
-/** The current "tailor a resume to one posting" prompt (Phase 3, step 3.2b). */
-export const TAILOR_POSTING_PROMPT = "tailor-posting.v1.md";
+/**
+ * The current "tailor a resume to one posting" prompt. v2 adds the keyword-
+ * coverage map and a selectable/track-aware base (tailor-v2). Drafts saved under
+ * v1 keep their stored "v1" tag; the file is preserved for that reason.
+ */
+export const TAILOR_POSTING_PROMPT = "tailor-posting.v2.md";
 
 /**
  * Read a prompt file and substitute every {{placeholder}} from `vars`.

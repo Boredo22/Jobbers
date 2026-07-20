@@ -3,13 +3,15 @@ import {
 	type TailoredDraft,
 	type TailoredDraftRecord,
 	TailoredDraftSchema,
+	type TailorRequest,
 } from "@jobber/shared";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "../../db/client";
 import {
 	applications,
 	companies,
 	jobPostings,
+	profiles,
 	profileVersions,
 	resumeVersions,
 	tailoredDrafts,
@@ -29,7 +31,7 @@ import { createProvider, logAiRun } from "../../lib/ai";
 // a draft attached to the application; nothing is ever auto-sent.
 // ---------------------------------------------------------------------------
 
-/** Raised when there's no active resume to tailor. Routes map it to a 409. */
+/** Raised when there's no resume at all to tailor from. Routes map it to a 409. */
 export class NoActiveResumeError extends Error {
 	constructor() {
 		super("No active resume to tailor — upload one on the Resume page first.");
@@ -37,7 +39,34 @@ export class NoActiveResumeError extends Error {
 	}
 }
 
-/** The active resume's id + text, or null when nothing is active. */
+/** Raised when an explicitly-requested base version id doesn't exist. → 404. */
+export class ResumeNotFoundError extends Error {
+	constructor(id: string) {
+		super(`Resume version ${id} not found.`);
+		this.name = "ResumeNotFoundError";
+	}
+}
+
+/**
+ * Pure base-precedence rule (unit-tested): an explicit pick wins, else the
+ * track's own resume, else the globally-active one. Returns null when none of
+ * the three is set — the caller turns that into NoActiveResumeError. Kept pure
+ * (no DB) so the precedence itself is testable in isolation.
+ */
+export function pickBaseVersionId(opts: {
+	explicit?: string | null;
+	trackResumeVersionId?: string | null;
+	activeResumeVersionId?: string | null;
+}): string | null {
+	return (
+		opts.explicit ??
+		opts.trackResumeVersionId ??
+		opts.activeResumeVersionId ??
+		null
+	);
+}
+
+/** The globally-active resume's id + text, or null when nothing is active. */
 async function activeResume(): Promise<{ id: string; text: string } | null> {
 	const [row] = await db
 		.select({ id: resumeVersions.id, text: resumeVersions.extractedText })
@@ -47,12 +76,62 @@ async function activeResume(): Promise<{ id: string; text: string } | null> {
 	return row ?? null;
 }
 
-/** The active profile rendered to prose for the prompt (or a placeholder). */
-async function activeProfileText(): Promise<string> {
+/**
+ * Resolve which resume version to tailor from, honoring pickBaseVersionId's
+ * precedence, and return its id + text. Throws ResumeNotFoundError if an
+ * explicitly-chosen id doesn't exist, NoActiveResumeError if nothing resolves.
+ */
+async function resolveBase(
+	req: TailorRequest,
+): Promise<{ id: string; text: string }> {
+	// The track's own resume, if a profile (track) was named.
+	let trackResumeVersionId: string | null = null;
+	if (req.profileId) {
+		const [p] = await db
+			.select({ rv: profiles.resumeVersionId })
+			.from(profiles)
+			.where(eq(profiles.id, req.profileId))
+			.limit(1);
+		trackResumeVersionId = p?.rv ?? null;
+	}
+
+	const active = await activeResume();
+	const chosenId = pickBaseVersionId({
+		explicit: req.resumeVersionId ?? null,
+		trackResumeVersionId,
+		activeResumeVersionId: active?.id ?? null,
+	});
+	if (!chosenId) throw new NoActiveResumeError();
+
+	// Reuse the text we already loaded if the active one is the pick.
+	if (active && chosenId === active.id) return active;
+
+	const [row] = await db
+		.select({ id: resumeVersions.id, text: resumeVersions.extractedText })
+		.from(resumeVersions)
+		.where(eq(resumeVersions.id, chosenId))
+		.limit(1);
+	if (!row) throw new ResumeNotFoundError(chosenId);
+	return row;
+}
+
+/**
+ * The profile rendered to prose for the prompt (or a placeholder). When a track
+ * (profileId) is named, read THAT track's active version — under multi-profile
+ * several versions are active at once, so a bare active-flag query is arbitrary.
+ */
+async function activeProfileText(profileId?: string): Promise<string> {
 	const [row] = await db
 		.select()
 		.from(profileVersions)
-		.where(eq(profileVersions.active, true))
+		.where(
+			profileId
+				? and(
+						eq(profileVersions.profileId, profileId),
+						eq(profileVersions.active, true),
+					)
+				: eq(profileVersions.active, true),
+		)
 		.limit(1);
 	if (!row) return "(No ideal-job profile defined yet.)";
 	const criteria = (row.rubric?.criteria ?? [])
@@ -120,7 +199,10 @@ async function loadPosting(jobPostingId: string) {
  *
  * Throws if the posting doesn't exist, or NoActiveResumeError if nothing's active.
  */
-export async function tailorPosting(jobPostingId: string): Promise<{
+export async function tailorPosting(
+	jobPostingId: string,
+	req: TailorRequest = {},
+): Promise<{
 	draft: TailoredDraft;
 	resumeVersionId: string;
 	modelUsed: string;
@@ -130,11 +212,12 @@ export async function tailorPosting(jobPostingId: string): Promise<{
 	if (!posting)
 		throw new Error(`tailorPosting: posting ${jobPostingId} not found`);
 
-	const resume = await activeResume();
-	if (!resume) throw new NoActiveResumeError();
+	// Base resolution (explicit → track → active) and profile flavor are both
+	// deliberate now — no more arbitrary active-row picks under multi-profile.
+	const resume = await resolveBase(req);
 
 	const prompt = renderPrompt(TAILOR_POSTING_PROMPT, {
-		profile: await activeProfileText(),
+		profile: await activeProfileText(req.profileId),
 		jd: renderJd(posting),
 		resume: resume.text,
 	});
@@ -145,9 +228,9 @@ export async function tailorPosting(jobPostingId: string): Promise<{
 		schema: TailoredDraftSchema,
 		schemaName: "tailored_draft",
 		tier: "large",
-		// Edits (each with before/after text) plus an outreach note is verbose —
-		// give the tool-call JSON room so it doesn't truncate mid-array.
-		maxTokens: 4096,
+		// Edits + a keyword-coverage map + an outreach note is verbose; the 3.2
+		// review already truncated once at 2048. 6144 gives the tool-call JSON room.
+		maxTokens: 6144,
 	});
 	await logAiRun("tailor", result);
 
@@ -181,20 +264,18 @@ function toRecord(
 /**
  * Save an (edited) tailored draft as a new row, attached to the posting and — if
  * an application already exists for that posting — to the application too, which
- * is what makes the draft reachable from the pipeline. Re-resolves the active
- * resume at save time to record which version was in play. Throws on unknown
- * posting / NoActiveResumeError, so a save can't dangle off nothing.
+ * is what makes the draft reachable from the pipeline. The client passes the base
+ * `resumeVersionId` returned by generate, so provenance can't drift if the active
+ * resume changed in between (tie-in #2). Throws on unknown posting.
  */
 export async function saveTailoredDraft(
 	jobPostingId: string,
 	draft: TailoredDraft,
+	resumeVersionId: string,
 ): Promise<TailoredDraftRecord> {
 	const posting = await loadPosting(jobPostingId);
 	if (!posting)
 		throw new Error(`saveTailoredDraft: posting ${jobPostingId} not found`);
-
-	const resume = await activeResume();
-	if (!resume) throw new NoActiveResumeError();
 
 	// Attach to the application for this posting, if one exists (newest first).
 	const [app] = await db
@@ -209,7 +290,7 @@ export async function saveTailoredDraft(
 		.values({
 			jobPostingId,
 			applicationId: app?.id ?? null,
-			resumeVersionId: resume.id,
+			resumeVersionId,
 			summary: draft.summary,
 			edits: draft.edits,
 			keywords: draft.keywords,
