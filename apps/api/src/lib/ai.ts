@@ -6,6 +6,8 @@ import {
 	CliProvider,
 	CoworkProvider,
 	estimateCostUsd,
+	OPENROUTER_DEFAULT_MODELS,
+	OpenRouterProvider,
 } from "@jobber/ai";
 import { db } from "../db/client";
 import { aiRuns } from "../db/schema";
@@ -44,6 +46,18 @@ export function createProvider(): AIProvider {
 		case "cowork":
 			// No API key needed — a Cowork session answers the file queue.
 			return new CoworkProvider({ queueDir: resolve(env.AI_QUEUE_DIR) });
+		case "openrouter": {
+			if (!env.OPENROUTER_API_KEY) {
+				throw new Error(
+					"AI_PROVIDER=openrouter requires OPENROUTER_API_KEY in .env (see .env.example).",
+				);
+			}
+			// Tier→model is the fixed defaults for now; step M3 makes it DB-driven.
+			return new OpenRouterProvider({
+				apiKey: env.OPENROUTER_API_KEY,
+				models: OPENROUTER_DEFAULT_MODELS,
+			});
+		}
 	}
 }
 
@@ -63,11 +77,12 @@ export async function logAiRun(
 	feature: AiFeature,
 	result: AIResult<unknown>,
 ): Promise<void> {
-	const cost = estimateCostUsd(
-		result.model,
-		result.inputTokens,
-		result.outputTokens,
-	);
+	// Prefer the provider-reported charge (OpenRouter's usage.cost — the real
+	// bill) over our own estimate; the PRICING-table estimate remains the
+	// fallback for backends that can't report one.
+	const cost =
+		result.costUsd ??
+		estimateCostUsd(result.model, result.inputTokens, result.outputTokens);
 	await db.insert(aiRuns).values({
 		feature,
 		provider: env.AI_PROVIDER,

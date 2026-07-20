@@ -77,6 +77,12 @@ export interface AIResult<T> {
 	model: string;
 	/** Wall-clock time for the call, for the latency comparison in step 3.3. */
 	durationMs: number;
+	/**
+	 * The actual provider-reported charge in USD (e.g. OpenRouter's
+	 * `usage.cost`), summed across retries. Absent when the backend can't report
+	 * one — the ledger then falls back to estimateCostUsd().
+	 */
+	costUsd?: number;
 }
 
 /**

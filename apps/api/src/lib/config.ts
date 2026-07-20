@@ -82,13 +82,19 @@ const EnvSchema = z.object({
 	// This key never reaches the browser — only the API talks to Anthropic.
 	ANTHROPIC_API_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
 
+	// OpenRouter API key for the "openrouter" backend (AI Models spec, step M1).
+	// Same treatment as the Anthropic key: optional at boot, loud error at first
+	// use without it, and it never reaches the browser.
+	OPENROUTER_API_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
+
 	// Which AI backend to use (step 2.1's provider abstraction). "api" = Anthropic
 	// Messages API directly; "cli" = shell out to the `claude` CLI (Mode B, no API
-	// key); "cowork" = file-queue for a Cowork session (Mode C, no API key).
-	// Default "api". (Providers built in lib/ai.ts.)
+	// key); "cowork" = file-queue for a Cowork session (Mode C, no API key);
+	// "openrouter" = OpenRouter's OpenAI-compatible API (Mode D, needs
+	// OPENROUTER_API_KEY). Default "api". (Providers built in lib/ai.ts.)
 	AI_PROVIDER: z.preprocess(
 		emptyAsUndefined,
-		z.enum(["api", "cli", "cowork"]).default("api"),
+		z.enum(["api", "cli", "cowork", "openrouter"]).default("api"),
 	),
 
 	// Mode B: the `claude` executable CliProvider runs. Default "claude" (on PATH).

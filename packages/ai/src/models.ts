@@ -23,6 +23,18 @@ export const MODELS: Record<ModelTier, string> = {
 	large: "claude-sonnet-5",
 };
 
+/**
+ * Tier → OpenRouter model slug, used when AI_PROVIDER=openrouter and no
+ * tier→model setting has been saved yet (step M3). Deliberately the OpenRouter
+ * spellings of the same two models as MODELS above — note the dots vs. dashes
+ * ("claude-haiku-4.5", not "claude-haiku-4-5") — so first run behaves exactly
+ * like Mode A. Slugs verified against https://openrouter.ai/api/v1/models.
+ */
+export const OPENROUTER_DEFAULT_MODELS: Record<ModelTier, string> = {
+	small: "anthropic/claude-haiku-4.5",
+	large: "anthropic/claude-sonnet-5",
+};
+
 /** USD per 1,000,000 tokens, per model. Used to estimate each run's cost. */
 type Price = { input: number; output: number };
 export const PRICING: Record<string, Price> = {

@@ -3,7 +3,12 @@
 // Public surface of the package. Consumers import everything from "@jobber/ai",
 // never from deep paths, so internals stay free to move.
 
-export { estimateCostUsd, MODELS, PRICING } from "./models";
+export {
+	estimateCostUsd,
+	MODELS,
+	OPENROUTER_DEFAULT_MODELS,
+	PRICING,
+} from "./models";
 export {
 	PROPOSE_PROFILE_PROMPT,
 	promptVersion,
@@ -24,3 +29,7 @@ export {
 	CoworkProvider,
 	type CoworkProviderOptions,
 } from "./providers/cowork";
+export {
+	OpenRouterProvider,
+	type OpenRouterProviderOptions,
+} from "./providers/openrouter";
