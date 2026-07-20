@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 import type { AshbyJob } from "./ashby";
+import type { BambooJob } from "./bamboohr";
+import type { BreezyJob } from "./breezy";
 import type { GreenhouseJob } from "./greenhouse";
 import type { LeverJob } from "./lever";
+import type { RecruiteeJob } from "./recruitee";
+import type { SmartRecruitersJob } from "./smartrecruiters";
+import type { WorkableJob } from "./workable";
 
 // ---------------------------------------------------------------------------
 // normalize.ts — turn each platform's shape into ONE common shape.
@@ -77,6 +82,12 @@ function detectRemote(location: string | null): boolean | null {
 	return /remote/i.test(location);
 }
 
+/** "Saratoga Springs" + "NY" + null → "Saratoga Springs, NY" (null if all empty). */
+function joinLocation(...parts: (string | null | undefined)[]): string | null {
+	const present = parts.filter((p): p is string => !!p && p.trim() !== "");
+	return present.length > 0 ? present.join(", ") : null;
+}
+
 // NOTE on comp: all three normalizers leave compMin/compMax null for now.
 // Salary is disclosed inconsistently and parsing it (regex vs LLM) is an
 // explicit Phase 2 concern (plan §9). The columns exist; we fill them later.
@@ -120,6 +131,126 @@ export function normalizeLever(jobs: LeverJob[]): NormalizedPosting[] {
 			compMax: null,
 			description,
 			contentHash: contentHashOf(j.text, description),
+		};
+	});
+}
+
+export function normalizeSmartRecruiters(
+	jobs: SmartRecruitersJob[],
+): NormalizedPosting[] {
+	return jobs.map((j) => {
+		// Each jobAd section (company blurb, JD, qualifications, …) is its own
+		// HTML block; strip each and stitch them into one readable text.
+		const description = j.sectionsHtml
+			? j.sectionsHtml
+					.map((html) => stripHtml(html))
+					.filter((t) => t !== "")
+					.join("\n\n") || null
+			: null;
+		const location = joinLocation(
+			j.location?.city,
+			j.location?.region,
+			j.location?.country,
+		);
+		return {
+			externalId: j.id,
+			title: j.name,
+			url: j.applyUrl ?? j.fallbackUrl,
+			location,
+			remote: j.location?.remote ?? detectRemote(location),
+			compMin: null,
+			compMax: null,
+			description,
+			contentHash: contentHashOf(j.name, description),
+		};
+	});
+}
+
+export function normalizeWorkable(jobs: WorkableJob[]): NormalizedPosting[] {
+	return jobs
+		.map((j) => {
+			const description = j.description
+				? stripHtml(j.description) || null
+				: null;
+			const location = joinLocation(j.city, j.state, j.country);
+			return {
+				externalId: j.shortcode,
+				title: j.title,
+				url: j.url ?? j.application_url ?? "",
+				location,
+				remote: j.telecommuting ?? detectRemote(location),
+				compMin: null,
+				compMax: null,
+				description,
+				contentHash: contentHashOf(j.title, description),
+			};
+		})
+		.filter((p) => p.url !== ""); // drop the (rare) posting with no usable URL
+}
+
+export function normalizeRecruitee(jobs: RecruiteeJob[]): NormalizedPosting[] {
+	return jobs
+		.map((j) => {
+			// Recruitee splits the posting text across two HTML fields.
+			const combined = [j.description, j.requirements]
+				.map((html) => (html ? stripHtml(html) : ""))
+				.filter((t) => t !== "")
+				.join("\n\n");
+			const description = combined || null;
+			const location = j.location ?? joinLocation(j.city, j.country);
+			return {
+				externalId: String(j.id),
+				title: j.title,
+				url: j.careers_url ?? "",
+				location,
+				remote: j.remote ?? detectRemote(location),
+				compMin: null,
+				compMax: null,
+				description,
+				contentHash: contentHashOf(j.title, description),
+			};
+		})
+		.filter((p) => p.url !== "");
+}
+
+export function normalizeBreezy(jobs: BreezyJob[]): NormalizedPosting[] {
+	return jobs
+		.map((j) => {
+			const description = j.description
+				? stripHtml(j.description) || null
+				: null;
+			const location = j.location?.name ?? null;
+			return {
+				externalId: j.id,
+				title: j.name,
+				url: j.url ?? "",
+				location,
+				remote: j.location?.is_remote ?? detectRemote(location),
+				compMin: null,
+				compMax: null,
+				description,
+				contentHash: contentHashOf(j.name, description),
+			};
+		})
+		.filter((p) => p.url !== "");
+}
+
+export function normalizeBamboo(jobs: BambooJob[]): NormalizedPosting[] {
+	return jobs.map((j) => {
+		const description = j.descriptionHtml
+			? stripHtml(j.descriptionHtml) || null
+			: null;
+		const location = joinLocation(j.location?.city, j.location?.state);
+		return {
+			externalId: String(j.id),
+			title: j.jobOpeningName,
+			url: j.url,
+			location,
+			remote: j.isRemote ?? detectRemote(location),
+			compMin: null,
+			compMax: null,
+			description,
+			contentHash: contentHashOf(j.jobOpeningName, description),
 		};
 	});
 }

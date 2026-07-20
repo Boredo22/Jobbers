@@ -148,12 +148,17 @@ Prompts live in the repo as versioned template files, not inline strings — you
 ## 5. Feature specifications
 
 ### 5.1 Job poller
-Hits the three pollable ATS APIs for every active company on a schedule (2× daily):
+Hits the pollable ATS APIs for every active company on a schedule (2× daily):
 - Greenhouse: `boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true`
 - Lever: `api.lever.co/v0/postings/{token}?mode=json`
 - Ashby: `api.ashbyhq.com/posting-api/job-board/{token}`
+- SmartRecruiters: `api.smartrecruiters.com/v1/companies/{token}/postings` (paginated; description via per-posting detail)
+- Workable: `apply.workable.com/api/v1/widget/accounts/{token}?details=true`
+- Recruitee: `{token}.recruitee.com/api/offers/`
+- Breezy HR: `{token}.breezy.hr/json`
+- BambooHR: `{token}.bamboohr.com/careers/list` (description via per-job `…/careers/{id}/detail`)
 
-These are public, documented JSON endpoints — no scraping, no ToS gray zone. Logic per run: fetch → normalize into the common `job_posting` shape → upsert by (company, external_id) → new rows trigger a title/keyword prefilter (your AI-Enablement title cluster + remote + comp floor) → matches enqueue for scoring → postings that vanished get marked `closed`. Failures are logged per-company, never fatal to the run. Companies on Eightfold/Workable/etc. (Symetra, Coursedog) live in a **manual-check bucket** the dashboard surfaces weekly — honest scope control beats brittle scrapers.
+These are public, documented JSON endpoints — no scraping, no ToS gray zone. Logic per run: fetch → normalize into the common `job_posting` shape → upsert by (company, external_id) → new rows trigger a title/keyword prefilter (your AI-Enablement title cluster + remote + comp floor) → matches enqueue for scoring → postings that vanished get marked `closed`. Failures are logged per-company, never fatal to the run. Companies on ATSs with no public JSON (Workday, Eightfold — e.g. Symetra) live in a **manual-check bucket** the dashboard surfaces weekly — honest scope control beats brittle scrapers; their unofficial career-page endpoints exist but are exactly the ToS gray zone we exclude.
 
 **Additional sources, phased in later:** HN "Who is Hiring" via the Algolia API (monthly thread, parse top-level comments, LLM-extract structured fields — a fun hard-parsing showcase); WeWorkRemotely/Remotive RSS; and a **bookmarklet** that POSTs the current page's URL + text to `/api/jobs/capture` so any posting you find in the wild enters the same pipeline (LLM parses the raw text into the schema). Deliberately excluded: LinkedIn/Indeed scraping (ToS violations, fragile — and saying *why* you excluded them is a portfolio point, not a gap).
 

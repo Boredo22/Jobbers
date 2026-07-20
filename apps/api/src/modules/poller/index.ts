@@ -1,13 +1,23 @@
 import type { AtsType } from "@jobber/shared";
 import * as ashby from "./ashby";
+import * as bamboohr from "./bamboohr";
+import * as breezy from "./breezy";
 import * as greenhouse from "./greenhouse";
 import * as lever from "./lever";
 import {
 	type NormalizedPosting,
 	normalizeAshby,
+	normalizeBamboo,
+	normalizeBreezy,
 	normalizeGreenhouse,
 	normalizeLever,
+	normalizeRecruitee,
+	normalizeSmartRecruiters,
+	normalizeWorkable,
 } from "./normalize";
+import * as recruitee from "./recruitee";
+import * as smartrecruiters from "./smartrecruiters";
+import * as workable from "./workable";
 
 // ---------------------------------------------------------------------------
 // index.ts — the adapter registry. One place that knows "for platform X, fetch
@@ -28,6 +38,13 @@ export const adapters: Record<PollableAtsType, Adapter> = {
 		normalizeGreenhouse(await greenhouse.fetchJobs(token)),
 	lever: async (token) => normalizeLever(await lever.fetchJobs(token)),
 	ashby: async (token) => normalizeAshby(await ashby.fetchJobs(token)),
+	smartrecruiters: async (token) =>
+		normalizeSmartRecruiters(await smartrecruiters.fetchJobs(token)),
+	workable: async (token) => normalizeWorkable(await workable.fetchJobs(token)),
+	recruitee: async (token) =>
+		normalizeRecruitee(await recruitee.fetchJobs(token)),
+	breezy: async (token) => normalizeBreezy(await breezy.fetchJobs(token)),
+	bamboohr: async (token) => normalizeBamboo(await bamboohr.fetchJobs(token)),
 };
 
 export type { NormalizedPosting } from "./normalize";
