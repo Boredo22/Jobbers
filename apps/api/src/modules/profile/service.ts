@@ -107,7 +107,7 @@ export async function proposeProfile(notes?: string): Promise<IdealJobProfile> {
 		applications: apps,
 	});
 
-	const provider = createProvider();
+	const provider = await createProvider();
 	const result = await provider.complete({
 		prompt,
 		schema: IdealJobProfileSchema,

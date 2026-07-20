@@ -169,7 +169,7 @@ export async function scorePosting(jobPostingId: string): Promise<ScoreResult> {
 		jd: renderJd(posting),
 	});
 
-	const provider = createProvider();
+	const provider = await createProvider();
 	const result = await provider.complete({
 		prompt,
 		schema: FitScoreSchema,

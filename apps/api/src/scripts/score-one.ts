@@ -35,7 +35,7 @@ Postgres. No degree requirement — we hire for demonstrated ability.
 `.trim();
 
 async function main() {
-	const provider = createProvider();
+	const provider = await createProvider();
 
 	// Render the versioned scoring prompt with the fixtures filled in.
 	const prompt = renderPrompt(SCORE_JOB_PROMPT, {

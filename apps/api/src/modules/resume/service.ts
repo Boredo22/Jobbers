@@ -213,7 +213,7 @@ export async function reviewResume(id: string): Promise<ResumeReview> {
 		profile: await activeProfileText(),
 	});
 
-	const provider = createProvider();
+	const provider = await createProvider();
 	const result = await provider.complete({
 		prompt,
 		schema: ResumeReviewSchema,

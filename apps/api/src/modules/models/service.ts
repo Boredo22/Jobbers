@@ -58,6 +58,21 @@ export function mapCatalog(raw: unknown): OpenRouterModel[] {
 		.sort((a, b) => a.id.localeCompare(b.id));
 }
 
+/**
+ * The first tier slug that isn't in the catalog, or null when both are fine.
+ * The catalog is already filtered to tools-capable models, so one membership
+ * check covers both "no such model" and "model can't do forced tool calls".
+ */
+export function findUnknownSlug(
+	settings: { small: string; large: string },
+	models: OpenRouterModel[],
+): string | null {
+	const ids = new Set(models.map((m) => m.id));
+	if (!ids.has(settings.small)) return settings.small;
+	if (!ids.has(settings.large)) return settings.large;
+	return null;
+}
+
 const CATALOG_URL = "https://openrouter.ai/api/v1/models";
 const CATALOG_TTL_MS = 60 * 60 * 1000; // 1 hour
 

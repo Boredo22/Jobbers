@@ -11,6 +11,7 @@ import {
 } from "@jobber/ai";
 import { db } from "../db/client";
 import { aiRuns } from "../db/schema";
+import { getAiModelSettings } from "../modules/settings/service";
 import { env } from "./config";
 
 // ---------------------------------------------------------------------------
@@ -30,7 +31,7 @@ import { env } from "./config";
  * Every caller depends only on the AIProvider interface, so this switch is the
  * ONLY place that knows which backend is live — swapping is a one-env-var change.
  */
-export function createProvider(): AIProvider {
+export async function createProvider(): Promise<AIProvider> {
 	switch (env.AI_PROVIDER) {
 		case "api": {
 			if (!env.ANTHROPIC_API_KEY) {
@@ -52,10 +53,11 @@ export function createProvider(): AIProvider {
 					"AI_PROVIDER=openrouter requires OPENROUTER_API_KEY in .env (see .env.example).",
 				);
 			}
-			// Tier→model is the fixed defaults for now; step M3 makes it DB-driven.
+			// Tier→model comes from the AI Models page's saved setting (one PK
+			// lookup — why this function is async); defaults until the first save.
 			return new OpenRouterProvider({
 				apiKey: env.OPENROUTER_API_KEY,
-				models: OPENROUTER_DEFAULT_MODELS,
+				models: (await getAiModelSettings()) ?? OPENROUTER_DEFAULT_MODELS,
 			});
 		}
 	}

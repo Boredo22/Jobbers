@@ -65,7 +65,7 @@ export async function draftCoverLetter(
 		date,
 	});
 
-	const provider = createProvider();
+	const provider = await createProvider();
 	const result = await provider.complete({
 		prompt,
 		schema: CoverLetterDraftSchema,

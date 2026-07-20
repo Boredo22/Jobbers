@@ -685,3 +685,25 @@ export const ModelsCatalogSchema = z.object({
 	fetchedAt: z.string(),
 });
 export type ModelsCatalog = z.infer<typeof ModelsCatalogSchema>;
+
+// Which OpenRouter model serves each ModelTier. One app_settings row (key
+// "ai-models"); this schema is the PUT body, the GET contract, AND the parse
+// boundary when the jsonb row is read back — including on every AI call, so a
+// corrupted row fails loudly instead of silently routing to a garbage slug.
+export const AiModelSettingsSchema = z.object({
+	small: z.string().min(1).describe("OpenRouter slug for the bulk tier"),
+	large: z.string().min(1).describe("OpenRouter slug for the quality tier"),
+});
+export type AiModelSettings = z.infer<typeof AiModelSettingsSchema>;
+
+// GET /api/settings/ai-models 200 response: what's saved (null before first
+// save), the in-code defaults (so the UI can show the effective config), and
+// which backend is live (the page shows a banner when it isn't "openrouter").
+export const AiModelSettingsResponseSchema = z.object({
+	settings: AiModelSettingsSchema.nullable(),
+	defaults: AiModelSettingsSchema,
+	activeProvider: z.string(),
+});
+export type AiModelSettingsResponse = z.infer<
+	typeof AiModelSettingsResponseSchema
+>;

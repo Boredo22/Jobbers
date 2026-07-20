@@ -225,7 +225,7 @@ export async function tailorPosting(
 		resume: resume.text,
 	});
 
-	const provider = createProvider();
+	const provider = await createProvider();
 	const result = await provider.complete({
 		prompt,
 		schema: TailoredDraftSchema,

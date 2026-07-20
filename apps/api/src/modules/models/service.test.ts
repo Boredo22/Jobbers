@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapCatalog } from "./service";
+import { findUnknownSlug, mapCatalog } from "./service";
 
 // ---------------------------------------------------------------------------
 // service.test.ts — the raw-catalog → lean-shape mapper, against a fixture
@@ -66,6 +66,22 @@ describe("mapCatalog", () => {
 		expect(deepseek?.promptPerMTok).toBe(0.25);
 		expect(deepseek?.completionPerMTok).toBe(0.85);
 		expect(deepseek?.contextLength).toBeNull();
+	});
+
+	it("flags the first slug missing from the catalog (PUT validation)", () => {
+		const models = mapCatalog(fixture);
+		const known = {
+			small: "anthropic/claude-haiku-4.5",
+			large: "deepseek/deepseek-chat",
+		};
+		expect(findUnknownSlug(known, models)).toBeNull();
+		// A model the catalog filtered out (no tools) is as invalid as a typo.
+		expect(
+			findUnknownSlug({ ...known, small: "prose/only-model" }, models),
+		).toBe("prose/only-model");
+		expect(findUnknownSlug({ ...known, large: "typo/nope" }, models)).toBe(
+			"typo/nope",
+		);
 	});
 
 	it("rejects a malformed catalog loudly", () => {
