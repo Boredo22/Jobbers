@@ -46,6 +46,25 @@ function fmtDate(d: Date): string {
 	return new Date(d).toLocaleDateString();
 }
 
+// Days since the last event on the application (falling back to the applied
+// date). The event log is already in every row, so "how long has this been
+// quiet?" is free to compute client-side — no API change needed.
+function daysQuiet(app: ApplicationWithEvents): number {
+	const last = app.events.reduce(
+		(max, e) => (e.occurredAt > max ? e.occurredAt : max),
+		app.appliedAt,
+	);
+	return Math.floor((Date.now() - new Date(last).getTime()) / 86_400_000);
+}
+
+// Past this many quiet days, an in-flight application gets an amber flag —
+// the board becomes the follow-up reminder instead of your memory.
+const QUIET_THRESHOLD_DAYS = 14;
+
+// Only in-flight columns nag. rejected/ghosted/offer are terminal — silence
+// there is just history.
+const IN_FLIGHT: ApplicationStatus[] = ["applied", "screen", "interview"];
+
 export function PipelinePage() {
 	const queryClient = useQueryClient();
 	// We track only the SELECTED id, not a copy of the application. The card data
@@ -81,8 +100,13 @@ export function PipelinePage() {
 			toastError("Status change didn't save — still the old status."),
 	});
 
+	// Stalest first, so the cards most in need of a nudge sit at the top of
+	// their column. (Spread before sort: sort mutates, and this array is
+	// derived from the query cache — never mutate cached data.)
 	const byStatus = (status: ApplicationStatus): ApplicationWithEvents[] =>
-		data?.filter((a) => a.status === status) ?? [];
+		[...(data?.filter((a) => a.status === status) ?? [])].sort(
+			(a, b) => daysQuiet(b) - daysQuiet(a),
+		);
 
 	const selected = data?.find((a) => a.id === selectedId) ?? null;
 
@@ -145,6 +169,12 @@ export function PipelinePage() {
 												<p className="mt-1 text-slate-400 text-xs">
 													applied {fmtDate(app.appliedAt)}
 												</p>
+												{IN_FLIGHT.includes(app.status) &&
+													daysQuiet(app) >= QUIET_THRESHOLD_DAYS && (
+														<p className="mt-0.5 font-medium text-amber-600 text-xs">
+															{daysQuiet(app)}d quiet
+														</p>
+													)}
 											</CardContent>
 										</Card>
 									))}
