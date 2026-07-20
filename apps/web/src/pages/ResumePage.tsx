@@ -17,6 +17,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { apiGet, apiSend } from "@/lib/api";
+import { toastError } from "@/lib/toast";
 
 const ResumeListSchema = z.array(ResumeVersionSchema);
 const OkSchema = z.object({ ok: z.literal(true) });
@@ -82,6 +83,8 @@ export function ResumePage() {
 		mutationFn: (id: string) =>
 			apiSend(`/api/resumes/${id}/activate`, "POST", {}, OkSchema),
 		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["resumes"] }),
+		onError: () =>
+			toastError("Activate failed — the old resume is still active."),
 	});
 
 	const runReview = useMutation({
@@ -131,6 +134,9 @@ export function ResumePage() {
 			</Card>
 
 			{list.isPending && <p className="text-slate-500">Loading…</p>}
+			{list.isError && (
+				<p className="text-red-600">Failed to load resumes — is the API up?</p>
+			)}
 			{list.data && list.data.length === 0 && (
 				<p className="text-slate-500">No resumes yet — upload one above.</p>
 			)}
@@ -181,7 +187,9 @@ export function ResumePage() {
 						<DialogDescription>
 							{detail.data
 								? `${detail.data.charCount.toLocaleString()} chars`
-								: "Loading…"}
+								: detail.isError
+									? "Failed to load this resume."
+									: "Loading…"}
 						</DialogDescription>
 
 						<div className="mt-3">

@@ -13,6 +13,7 @@ import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { apiGet, apiSend } from "@/lib/api";
+import { toastError } from "@/lib/toast";
 
 const TriageListSchema = z.array(TriageItemSchema);
 const OkSchema = z.object({ ok: z.literal(true) });
@@ -82,6 +83,9 @@ export function TriagePage() {
 				OkSchema,
 			),
 		onSuccess: invalidateTriage,
+		// Without this, a failed request looks identical to a successful one —
+		// the button just quietly does nothing. Same on every mutation below.
+		onError: () => toastError("Feedback didn't save — is the API up?"),
 	});
 
 	// Dismiss — hides the card from triage (server sets dismissed=true).
@@ -89,6 +93,7 @@ export function TriagePage() {
 		mutationFn: (id: string) =>
 			apiSend(`/api/scores/${id}/dismiss`, "POST", {}, OkSchema),
 		onSuccess: invalidateTriage,
+		onError: () => toastError("Dismiss failed — the card is still live."),
 	});
 
 	// Mark applied — creates a linked application (so it also shows in Pipeline),
@@ -112,6 +117,8 @@ export function TriagePage() {
 			// The Pipeline page reads this query — keep it fresh so the new card shows.
 			queryClient.invalidateQueries({ queryKey: ["applications"] });
 		},
+		onError: () =>
+			toastError("Mark applied failed — no application was created."),
 	});
 
 	// Poll every board for new postings (replaces `pnpm --filter api ...poll` /

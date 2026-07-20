@@ -18,6 +18,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { apiGet, apiSend } from "@/lib/api";
+import { toastError } from "@/lib/toast";
 
 const ApplicationListSchema = z.array(ApplicationWithEventsSchema);
 
@@ -76,6 +77,8 @@ export function PipelinePage() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["applications"] });
 		},
+		onError: () =>
+			toastError("Status change didn't save — still the old status."),
 	});
 
 	const byStatus = (status: ApplicationStatus): ApplicationWithEvents[] =>

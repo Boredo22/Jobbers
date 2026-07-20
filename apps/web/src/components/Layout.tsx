@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { HealthBadge } from "./HealthBadge";
+import { Toaster } from "./Toaster";
 
 // The nav items, data-driven so the markup is a single map instead of repeated
 // JSX. Add a page here + a <Route> in App.tsx and it appears in the sidebar.
@@ -54,6 +55,9 @@ export function Layout() {
 			<main className="flex-1 overflow-x-hidden p-6">
 				<Outlet />
 			</main>
+
+			{/* App-wide error toasts (lib/toast.ts) — one mount point for all pages. */}
+			<Toaster />
 		</div>
 	);
 }
