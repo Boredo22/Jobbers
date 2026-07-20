@@ -4,6 +4,7 @@ import { CompaniesPage } from "@/pages/CompaniesPage";
 import { JobsPage } from "@/pages/JobsPage";
 import { PipelinePage } from "@/pages/PipelinePage";
 import { ProfilePage } from "@/pages/ProfilePage";
+import { ResumePage } from "@/pages/ResumePage";
 import { TriagePage } from "@/pages/TriagePage";
 
 // The route table. The parent <Route element={<Layout/>}> renders the sidebar
@@ -19,6 +20,7 @@ export default function App() {
 				<Route path="/companies" element={<CompaniesPage />} />
 				<Route path="/pipeline" element={<PipelinePage />} />
 				<Route path="/profile" element={<ProfilePage />} />
+				<Route path="/resume" element={<ResumePage />} />
 			</Route>
 		</Routes>
 	);

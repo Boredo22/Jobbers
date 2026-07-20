@@ -7,6 +7,7 @@ export { estimateCostUsd, MODELS, PRICING } from "./models";
 export {
 	PROPOSE_PROFILE_PROMPT,
 	promptVersion,
+	REVIEW_RESUME_PROMPT,
 	renderPrompt,
 	SCORE_JOB_PROMPT,
 } from "./prompts";

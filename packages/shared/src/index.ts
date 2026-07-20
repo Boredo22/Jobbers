@@ -267,6 +267,55 @@ export const ProfileProposeSchema = z.object({
 export type ProfilePropose = z.infer<typeof ProfileProposeSchema>;
 
 // ---------------------------------------------------------------------------
+// Resume versions (Phase 3, step 3.2). An uploaded resume becomes a versioned
+// row (extracted text + metadata); one is "active" and feeds the scorer and the
+// profile-proposer. The list returns metadata only; the detail adds the text.
+// ---------------------------------------------------------------------------
+export const ResumeVersionSchema = z.object({
+	id: z.string().uuid(),
+	label: z.string(),
+	active: z.boolean(),
+	charCount: z.number().int(),
+	createdAt: z.coerce.date(),
+});
+export type ResumeVersion = z.infer<typeof ResumeVersionSchema>;
+
+export const ResumeDetailSchema = ResumeVersionSchema.extend({
+	extractedText: z.string(),
+});
+export type ResumeDetail = z.infer<typeof ResumeDetailSchema>;
+
+// The AI resume-review output contract (large tier). Draft feedback only — the
+// human decides what to change (house rule: AI drafts, human finishes).
+export const ResumeReviewSchema = z.object({
+	summary: z
+		.string()
+		.describe(
+			"2–3 sentence overall read: how strong, and for what kind of role.",
+		),
+	strengths: z
+		.array(z.string())
+		.describe("What's working — concrete, cite the resume."),
+	weaknesses: z
+		.array(z.string())
+		.describe("What's weak or missing, against the target profile."),
+	sectionSuggestions: z
+		.array(
+			z.object({
+				section: z.string().describe("e.g. 'Summary', 'Experience — Acme'."),
+				suggestion: z.string().describe("A specific, actionable rewrite idea."),
+			}),
+		)
+		.describe("Per-section, actionable edits."),
+	atsFlags: z
+		.array(z.string())
+		.describe(
+			"Formatting/keyword issues that could trip an applicant-tracking system (tables, columns, missing keywords, non-standard headings).",
+		),
+});
+export type ResumeReview = z.infer<typeof ResumeReviewSchema>;
+
+// ---------------------------------------------------------------------------
 // Application — your pipeline. The event log is the truth; `status` is a fast
 // denormalized mirror of it (see the tracker module + docs/notes/step-1.6.md).
 // These enums mirror the DB enums in apps/api/src/db/schema.ts — schema.ts owns

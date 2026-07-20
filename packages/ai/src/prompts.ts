@@ -26,6 +26,9 @@ export const SCORE_JOB_PROMPT = "score-job.v1.md";
 /** The current "propose an ideal-job profile" prompt (Phase 3, step 3.1). */
 export const PROPOSE_PROFILE_PROMPT = "propose-profile.v1.md";
 
+/** The current "review a resume" prompt (Phase 3, step 3.2). */
+export const REVIEW_RESUME_PROMPT = "review-resume.v1.md";
+
 /**
  * Read a prompt file and substitute every {{placeholder}} from `vars`.
  * Throws if the file references a placeholder `vars` doesn't provide — a missing
