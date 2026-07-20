@@ -2,7 +2,7 @@ import type { JobListItem, JobsQuery } from "@jobber/shared";
 import { and, desc, eq, type SQL } from "drizzle-orm";
 import { db } from "../../db/client";
 import { companies, jobPostings } from "../../db/schema";
-import { isCandidate } from "../poller/prefilter";
+import { isCandidate, isUsLocation } from "../poller/prefilter";
 
 // ---------------------------------------------------------------------------
 // jobs/service.ts — read side of the job postings.
@@ -49,8 +49,12 @@ export async function listJobs(query: JobsQuery): Promise<JobListItem[]> {
 		candidate: isCandidate(row),
 	}));
 
-	// …then apply the candidate filter only if the caller asked for it. `=== true`
-	// / `=== false` both filter; `undefined` means "don't filter on this axis".
-	if (query.candidate === undefined) return withCandidate;
-	return withCandidate.filter((r) => r.candidate === query.candidate);
+	// …then apply the computed filters only if the caller asked. Both are derived
+	// from row fields (candidate from the prefilter, US from the location string),
+	// so like `candidate` they live here in memory rather than in the WHERE.
+	let result = withCandidate;
+	if (query.candidate !== undefined)
+		result = result.filter((r) => r.candidate === query.candidate);
+	if (query.usOnly) result = result.filter((r) => isUsLocation(r.location));
+	return result;
 }

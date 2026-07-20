@@ -115,6 +115,12 @@ export const JobsQuerySchema = z.object({
 		.enum(["true", "false"])
 		.transform((v) => v === "true")
 		.optional(),
+	// Like `candidate`, computed from the location string rather than stored —
+	// keep only postings we can place in the US (see isUsLocation).
+	usOnly: z
+		.enum(["true", "false"])
+		.transform((v) => v === "true")
+		.optional(),
 });
 export type JobsQuery = z.infer<typeof JobsQuerySchema>;
 

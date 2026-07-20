@@ -48,12 +48,15 @@ export function JobsPage() {
 	// "open roles that passed the prefilter".
 	const [openOnly, setOpenOnly] = useState(true);
 	const [candidateOnly, setCandidateOnly] = useState(true);
+	// The owner is US-based, so hiding known-foreign roles is the useful default.
+	const [usOnly, setUsOnly] = useState(true);
 
 	// Build the querystring from the toggles. Filtering happens SERVER-side
 	// (7000+ postings shouldn't cross the wire), so the toggles drive the URL.
 	const params = new URLSearchParams();
 	if (openOnly) params.set("status", "open");
 	if (candidateOnly) params.set("candidate", "true");
+	if (usOnly) params.set("usOnly", "true");
 	const qs = params.toString();
 
 	const { data, isPending, isError } = useQuery({
@@ -61,7 +64,7 @@ export function JobsPage() {
 		// fetches (and caches) that combination separately. Flip back and the
 		// previous result is served instantly from cache. This is why the key is
 		// an array with the params, not just ["jobs"].
-		queryKey: ["jobs", { openOnly, candidateOnly }],
+		queryKey: ["jobs", { openOnly, candidateOnly, usOnly }],
 		queryFn: () => apiGet(`/api/jobs?${qs}`, JobListSchema),
 	});
 
@@ -85,6 +88,14 @@ export function JobsPage() {
 							onChange={(e) => setCandidateOnly(e.target.checked)}
 						/>
 						Candidates only
+					</label>
+					<label className="flex items-center gap-2">
+						<input
+							type="checkbox"
+							checked={usOnly}
+							onChange={(e) => setUsOnly(e.target.checked)}
+						/>
+						US only
 					</label>
 				</div>
 			</div>
