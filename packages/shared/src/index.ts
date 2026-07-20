@@ -203,6 +203,70 @@ export const AiSpendSchema = z.object({
 export type AiSpend = z.infer<typeof AiSpendSchema>;
 
 // ---------------------------------------------------------------------------
+// IdealJobProfile — the versioned rubric the scorer grades against (Phase 3,
+// step 3.1). This is BOTH the AI "propose a profile" output contract and the
+// save-a-profile request body; a saved version splits into the profile_versions
+// table (northStar → its column, {hardFilters, criteria} → the rubric jsonb).
+// ---------------------------------------------------------------------------
+export const HardFiltersSchema = z.object({
+	compFloor: z
+		.number()
+		.int()
+		.nullable()
+		.describe("Minimum acceptable base comp in USD, or null if no hard floor."),
+	locationRule: z
+		.string()
+		.describe('Plain-English location constraint, e.g. "Remote (US) only".'),
+	remoteRequired: z
+		.boolean()
+		.describe("True if on-site/hybrid is a dealbreaker."),
+});
+export type HardFilters = z.infer<typeof HardFiltersSchema>;
+
+export const ProfileCriterionSchema = z.object({
+	name: z.string().describe("Short label, e.g. 'Applied-AI work'."),
+	weight: z
+		.number()
+		.int()
+		.min(1)
+		.max(5)
+		.describe("How much this matters, 1 (minor) – 5 (decisive)."),
+	description: z
+		.string()
+		.describe("What a strong match on this criterion looks like."),
+});
+export type ProfileCriterion = z.infer<typeof ProfileCriterionSchema>;
+
+export const IdealJobProfileSchema = z.object({
+	northStar: z
+		.string()
+		.describe("One paragraph: the role this candidate is actually aiming for."),
+	hardFilters: HardFiltersSchema,
+	criteria: z
+		.array(ProfileCriterionSchema)
+		.min(1)
+		.describe("The weighted grading key — 3–6 criteria works well."),
+});
+export type IdealJobProfile = z.infer<typeof IdealJobProfileSchema>;
+
+// A saved profile version as returned by GET /api/profile (the profile content
+// plus its version metadata). null when no profile has been saved yet.
+export const ProfileVersionSchema = IdealJobProfileSchema.extend({
+	id: z.string().uuid(),
+	version: z.number().int(),
+	active: z.boolean(),
+	createdAt: z.coerce.date(),
+});
+export type ProfileVersion = z.infer<typeof ProfileVersionSchema>;
+
+// POST /api/profile/propose body — optional free-text notes ("what I'm looking
+// for") the AI folds in alongside resume + application history.
+export const ProfileProposeSchema = z.object({
+	notes: z.string().optional(),
+});
+export type ProfilePropose = z.infer<typeof ProfileProposeSchema>;
+
+// ---------------------------------------------------------------------------
 // Application — your pipeline. The event log is the truth; `status` is a fast
 // denormalized mirror of it (see the tracker module + docs/notes/step-1.6.md).
 // These enums mirror the DB enums in apps/api/src/db/schema.ts — schema.ts owns

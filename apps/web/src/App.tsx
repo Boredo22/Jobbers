@@ -3,6 +3,7 @@ import { Layout } from "@/components/Layout";
 import { CompaniesPage } from "@/pages/CompaniesPage";
 import { JobsPage } from "@/pages/JobsPage";
 import { PipelinePage } from "@/pages/PipelinePage";
+import { ProfilePage } from "@/pages/ProfilePage";
 import { TriagePage } from "@/pages/TriagePage";
 
 // The route table. The parent <Route element={<Layout/>}> renders the sidebar
@@ -17,6 +18,7 @@ export default function App() {
 				<Route path="/jobs" element={<JobsPage />} />
 				<Route path="/companies" element={<CompaniesPage />} />
 				<Route path="/pipeline" element={<PipelinePage />} />
+				<Route path="/profile" element={<ProfilePage />} />
 			</Route>
 		</Routes>
 	);

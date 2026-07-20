@@ -23,6 +23,9 @@ const PROMPTS_DIR = new URL("../prompts/", import.meta.url);
 /** The current scoring prompt. Bump this constant when you add score-job.v2.md. */
 export const SCORE_JOB_PROMPT = "score-job.v1.md";
 
+/** The current "propose an ideal-job profile" prompt (Phase 3, step 3.1). */
+export const PROPOSE_PROFILE_PROMPT = "propose-profile.v1.md";
+
 /**
  * Read a prompt file and substitute every {{placeholder}} from `vars`.
  * Throws if the file references a placeholder `vars` doesn't provide — a missing

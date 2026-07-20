@@ -137,6 +137,37 @@ export async function processQueueOnce(batch = BATCH): Promise<DrainSummary> {
 	return summary;
 }
 
+/**
+ * Re-queue every open posting that already has a score, so a drain re-scores it
+ * against the *current* active profile (step 3.1's "re-score" button). Uses
+ * onConflictDoUpdate to reset an existing queue row back to pending — the drain
+ * then writes a fresh fit_scores row (history kept; triage shows the latest).
+ * Returns how many were queued.
+ */
+export async function rescoreOpenScored(): Promise<number> {
+	const scored = await db
+		.selectDistinct({ id: jobPostings.id })
+		.from(fitScores)
+		.innerJoin(jobPostings, eq(fitScores.jobPostingId, jobPostings.id))
+		.where(eq(jobPostings.status, "open"));
+	if (scored.length === 0) return 0;
+
+	const res = await db
+		.insert(scoringQueue)
+		.values(scored.map((s) => ({ jobPostingId: s.id })))
+		.onConflictDoUpdate({
+			target: scoringQueue.jobPostingId,
+			set: {
+				status: "pending",
+				attempts: 0,
+				lastError: null,
+				updatedAt: new Date(),
+			},
+		})
+		.returning({ id: scoringQueue.id });
+	return res.length;
+}
+
 /** How many postings are still pending — handy for scripts/logging. */
 export async function pendingCount(): Promise<number> {
 	const [row] = await db

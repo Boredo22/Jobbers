@@ -9,6 +9,7 @@ import { adminRoutes } from "./modules/admin/routes";
 import { companiesRoutes } from "./modules/companies/routes";
 import { jobsRoutes } from "./modules/jobs/routes";
 import { schedulerPlugin } from "./modules/poller/scheduler";
+import { profileRoutes } from "./modules/profile/routes";
 import { scoringWorkerPlugin } from "./modules/scoring/queue";
 import { scoringRoutes } from "./modules/scoring/routes";
 import { trackerRoutes } from "./modules/tracker/routes";
@@ -34,6 +35,7 @@ app.register(trackerRoutes);
 app.register(jobsRoutes);
 app.register(companiesRoutes);
 app.register(scoringRoutes);
+app.register(profileRoutes);
 
 // Background jobs are plugins too: this one arms the twice-daily poll cron
 // (a no-op unless POLL_SCHEDULE_ENABLED=true).

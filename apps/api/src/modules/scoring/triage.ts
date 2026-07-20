@@ -52,6 +52,11 @@ export async function listTriage(): Promise<TriageItem[]> {
 					eq(fitScores.dismissed, false),
 					eq(jobPostings.status, "open"),
 					isNull(applications.id),
+					// Only the LATEST score per posting. Re-scoring (step 3.1) appends a
+					// new fit_scores row rather than mutating the old one, so without
+					// this a re-scored posting would show a stale duplicate card. The
+					// correlated NOT EXISTS keeps a row only if no newer score exists.
+					sql`not exists (select 1 from ${fitScores} fs2 where fs2.job_posting_id = ${fitScores.jobPostingId} and fs2.created_at > ${fitScores.createdAt})`,
 				),
 			)
 			.orderBy(desc(fitScores.score), desc(fitScores.createdAt))

@@ -4,7 +4,12 @@
 // never from deep paths, so internals stay free to move.
 
 export { estimateCostUsd, MODELS, PRICING } from "./models";
-export { promptVersion, renderPrompt, SCORE_JOB_PROMPT } from "./prompts";
+export {
+	PROPOSE_PROFILE_PROMPT,
+	promptVersion,
+	renderPrompt,
+	SCORE_JOB_PROMPT,
+} from "./prompts";
 export type {
 	AIProvider,
 	AIRequest,
