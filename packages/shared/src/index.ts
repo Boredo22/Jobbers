@@ -193,6 +193,12 @@ export const FitScoreSchema = z.object({
 		.describe(
 			"2–4 sentence plain-English explanation of the score, for a human triaging quickly.",
 		),
+	baseCompUsd: z
+		.number()
+		.nullable()
+		.describe(
+			"The base salary in USD if the posting discloses one — the LOWER end of a stated range. Null if no base pay is stated. Read it from the posting text; this lets the app filter roles above the candidate's comp ceiling.",
+		),
 });
 export type FitScore = z.infer<typeof FitScoreSchema>;
 
@@ -222,6 +228,9 @@ export const TriageItemSchema = z.object({
 	remote: z.boolean().nullable(),
 	compMin: z.number().int().nullable(),
 	compMax: z.number().int().nullable(),
+	// The scorer's read of the base comp from the posting text (the ATS feeds
+	// rarely disclose it structurally), used to render comp and enforce the ceiling.
+	baseCompUsd: z.number().nullable(),
 	score: z.number(),
 	matchPoints: z.array(z.string()),
 	gaps: z.array(z.string()),
@@ -253,6 +262,13 @@ export const HardFiltersSchema = z.object({
 		.int()
 		.nullable()
 		.describe("Minimum acceptable base comp in USD, or null if no hard floor."),
+	compCeiling: z
+		.number()
+		.int()
+		.nullable()
+		.describe(
+			"Maximum base comp in USD worth pursuing. Roles whose disclosed base floor is above this are likely too senior / a poor use of time and are filtered out of scoring and triage. Null = no ceiling.",
+		),
 	locationRule: z
 		.string()
 		.describe('Plain-English location constraint, e.g. "Remote (US) only".'),

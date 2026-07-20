@@ -37,11 +37,21 @@ function scoreVariant(score: number): BadgeProps["variant"] {
 	return "neutral";
 }
 
-function fmtComp(min: number | null, max: number | null): string | null {
-	if (min == null && max == null) return null;
-	const f = (n: number) => `$${Math.round(n / 1000)}k`;
-	if (min != null && max != null) return `${f(min)}–${f(max)}`;
-	return f((min ?? max) as number);
+const kUsd = (n: number) => `$${Math.round(n / 1000)}k`;
+
+// Prefer the posting's structured comp range; fall back to the scorer's extracted
+// base (tagged "est" since it was read from the JD text, not a structured field).
+function compLabel(item: {
+	compMin: number | null;
+	compMax: number | null;
+	baseCompUsd: number | null;
+}): string | null {
+	if (item.compMin != null && item.compMax != null)
+		return `${kUsd(item.compMin)}–${kUsd(item.compMax)}`;
+	if (item.compMin != null || item.compMax != null)
+		return kUsd((item.compMin ?? item.compMax) as number);
+	if (item.baseCompUsd != null) return `${kUsd(item.baseCompUsd)} base · est`;
+	return null;
 }
 
 export function TriagePage() {
@@ -237,10 +247,8 @@ export function TriagePage() {
 									<div className="mt-0.5 flex flex-wrap items-center gap-2 text-slate-500 text-xs">
 										{item.location && <span>{item.location}</span>}
 										{item.remote && <Badge variant="blue">remote</Badge>}
-										{fmtComp(item.compMin, item.compMax) && (
-											<span className="tabular-nums">
-												{fmtComp(item.compMin, item.compMax)}
-											</span>
+										{compLabel(item) && (
+											<span className="tabular-nums">{compLabel(item)}</span>
 										)}
 										{item.credentialGapFlag && (
 											<Badge variant="red">⚠ credential gap</Badge>

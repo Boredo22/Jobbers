@@ -127,6 +127,10 @@ export const fitScores = pgTable("fit_scores", {
 	gaps: jsonb("gaps").$type<string[]>().notNull(),
 	credentialGapFlag: boolean("credential_gap_flag").notNull().default(false),
 	rationale: text("rationale").notNull(),
+	// The scorer's read of the disclosed base comp (USD), or null. The ATS feeds
+	// almost never expose comp structurally, so the LLM extracts it from the JD
+	// text here; the comp ceiling (profile hard filter) is enforced against it.
+	baseCompUsd: integer("base_comp_usd"),
 	modelUsed: text("model_used").notNull(),
 	// Which prompt version graded this (e.g. "v1"). Stored so a later prompt
 	// rewrite doesn't make old scores lie about how they were produced (step 2.3).

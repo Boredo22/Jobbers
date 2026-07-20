@@ -20,8 +20,11 @@ import { readFileSync } from "node:fs";
 // wherever the process was launched. (Production bundling ships this dir — 8.1.)
 const PROMPTS_DIR = new URL("../prompts/", import.meta.url);
 
-/** The current scoring prompt. Bump this constant when you add score-job.v2.md. */
-export const SCORE_JOB_PROMPT = "score-job.v1.md";
+/**
+ * The current scoring prompt. v2 adds baseCompUsd extraction (so the comp-ceiling
+ * hard filter has a value to act on). Old scores keep their stored "v1" tag.
+ */
+export const SCORE_JOB_PROMPT = "score-job.v2.md";
 
 /** The current "propose an ideal-job profile" prompt (Phase 3, step 3.1). */
 export const PROPOSE_PROFILE_PROMPT = "propose-profile.v1.md";

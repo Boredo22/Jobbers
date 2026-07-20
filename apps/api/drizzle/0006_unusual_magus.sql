@@ -1,0 +1,1 @@
+ALTER TABLE "fit_scores" ADD COLUMN "base_comp_usd" integer;

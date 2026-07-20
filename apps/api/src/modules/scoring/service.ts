@@ -59,7 +59,20 @@ async function activeProfile(): Promise<{ text: string; id: string | null }> {
 	const criteria = (row.rubric?.criteria ?? [])
 		.map((c) => `- ${c.name} (weight ${c.weight}): ${c.description}`)
 		.join("\n");
-	const text = `${row.northStar}\n\nWhat matters, and how much:\n${criteria}`;
+
+	// Surface the hard filters (comp floor/ceiling, location, remote) to the model
+	// so the score reflects the dealbreakers, not just the weighted criteria.
+	const hf = (row.rubric?.hardFilters ?? {}) as Record<string, unknown>;
+	const floor = typeof hf.compFloor === "number" ? `$${hf.compFloor}` : "none";
+	const ceiling =
+		typeof hf.compCeiling === "number" ? `$${hf.compCeiling}` : "none";
+	const loc =
+		typeof hf.locationRule === "string" ? hf.locationRule : "unspecified";
+	const remote =
+		hf.remoteRequired === true ? "remote required" : "remote optional";
+	const filters = `Hard filters — comp floor: ${floor}; comp ceiling: ${ceiling} (roles clearly above the ceiling are too senior — a weak fit); location: ${loc}; ${remote}.`;
+
+	const text = `${row.northStar}\n\n${filters}\n\nWhat matters, and how much:\n${criteria}`;
 	return { text, id: row.id };
 }
 
@@ -163,6 +176,7 @@ export async function scorePosting(jobPostingId: string): Promise<ScoreResult> {
 			gaps: fit.gaps,
 			credentialGapFlag: fit.credentialGapFlag,
 			rationale: fit.rationale,
+			baseCompUsd: fit.baseCompUsd,
 			modelUsed: result.model,
 			promptVersion: promptVersion(SCORE_JOB_PROMPT),
 		})

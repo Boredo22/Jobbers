@@ -8,6 +8,7 @@ import {
 	fitScores,
 	jobPostings,
 } from "../../db/schema";
+import { getActiveCompCeiling } from "../profile/service";
 
 // ---------------------------------------------------------------------------
 // scoring/triage.ts — the read side that feeds the /triage page (step 2.5).
@@ -20,6 +21,17 @@ import {
 
 /** Scored postings worth reviewing, best-first. Excludes closed/applied/dismissed. */
 export async function listTriage(): Promise<TriageItem[]> {
+	// The active profile's comp ceiling, if any — postings whose disclosed base is
+	// above it are dropped as too senior to be worth the time. "Disclosed base" is
+	// the scorer's extracted baseCompUsd, falling back to any structured comp_min;
+	// postings with no comp signal at all are kept (we don't filter on missing data).
+	const ceiling = await getActiveCompCeiling();
+	const effectiveComp = sql`coalesce(${fitScores.baseCompUsd}, ${jobPostings.compMin})`;
+	const withinCeiling =
+		ceiling === null
+			? undefined
+			: sql`(${effectiveComp} is null or ${effectiveComp} <= ${ceiling})`;
+
 	return (
 		db
 			.select({
@@ -33,6 +45,7 @@ export async function listTriage(): Promise<TriageItem[]> {
 				remote: jobPostings.remote,
 				compMin: jobPostings.compMin,
 				compMax: jobPostings.compMax,
+				baseCompUsd: fitScores.baseCompUsd,
 				score: fitScores.score,
 				matchPoints: fitScores.matchPoints,
 				gaps: fitScores.gaps,
@@ -52,6 +65,8 @@ export async function listTriage(): Promise<TriageItem[]> {
 					eq(fitScores.dismissed, false),
 					eq(jobPostings.status, "open"),
 					isNull(applications.id),
+					// Comp ceiling (undefined when unset → and() ignores it).
+					withinCeiling,
 					// Only the LATEST score per posting. Re-scoring (step 3.1) appends a
 					// new fit_scores row rather than mutating the old one, so without
 					// this a re-scored posting would show a stale duplicate card. The

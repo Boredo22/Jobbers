@@ -76,6 +76,22 @@ export async function proposeProfile(notes?: string): Promise<IdealJobProfile> {
 	return result.data;
 }
 
+/**
+ * Coerce a stored rubric's hardFilters (unknown jsonb) into the current
+ * HardFilters shape, defaulting each field. This is what lets us ADD a field
+ * (compCeiling) without a migration: profiles saved before it simply read back as
+ * null, rather than failing the response schema on the missing key.
+ */
+function normalizeHardFilters(raw: unknown): HardFilters {
+	const hf = (raw ?? {}) as Record<string, unknown>;
+	return {
+		compFloor: typeof hf.compFloor === "number" ? hf.compFloor : null,
+		compCeiling: typeof hf.compCeiling === "number" ? hf.compCeiling : null,
+		locationRule: typeof hf.locationRule === "string" ? hf.locationRule : "",
+		remoteRequired: hf.remoteRequired === true,
+	};
+}
+
 /** Recombine a profile_versions row into the flat ProfileVersion wire shape. */
 function toProfileVersion(
 	row: typeof profileVersions.$inferSelect,
@@ -86,12 +102,7 @@ function toProfileVersion(
 		active: row.active,
 		createdAt: row.createdAt,
 		northStar: row.northStar,
-		// rubric is nullable in the DB, but any profile we write always sets it.
-		hardFilters: (row.rubric?.hardFilters ?? {
-			compFloor: null,
-			locationRule: "",
-			remoteRequired: false,
-		}) as HardFilters,
+		hardFilters: normalizeHardFilters(row.rubric?.hardFilters),
 		criteria: (row.rubric?.criteria ?? []) as ProfileCriterion[],
 	};
 }
@@ -104,6 +115,16 @@ export async function getActiveProfile(): Promise<ProfileVersion | null> {
 		.where(eq(profileVersions.active, true))
 		.limit(1);
 	return row ? toProfileVersion(row) : null;
+}
+
+/**
+ * The active profile's comp ceiling (max base worth pursuing), or null if there's
+ * no active profile or no ceiling set. The scoring pipeline uses this to hard-drop
+ * postings whose disclosed base floor is above it — see scoring/queue + triage.
+ */
+export async function getActiveCompCeiling(): Promise<number | null> {
+	const profile = await getActiveProfile();
+	return profile?.hardFilters.compCeiling ?? null;
 }
 
 /**

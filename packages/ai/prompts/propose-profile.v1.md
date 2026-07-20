@@ -25,6 +25,9 @@ what they can actually do, and the application history for revealed preference
   discipline, seniority, and the kind of work. Concrete, not aspirational fluff.
 - **hardFilters** — the dealbreakers:
   - `compFloor` — a base-salary floor in USD if their notes imply one, else null.
+  - `compCeiling` — a base-salary CEILING in USD above which roles are likely too
+    senior to be worth pursuing (they'd be underqualified), if the notes/history
+    imply one, else null. Only set it when there's a real signal — don't invent one.
   - `locationRule` — a plain-English location constraint (e.g. "Remote (US) only").
   - `remoteRequired` — true only if on-site/hybrid would genuinely rule a role out.
   Infer conservatively; don't invent a constraint the inputs don't support.

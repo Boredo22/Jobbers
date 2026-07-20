@@ -4,6 +4,7 @@ import { db } from "../../db/client";
 import { fitScores, jobPostings, scoringQueue } from "../../db/schema";
 import { env } from "../../lib/config";
 import { isCandidate } from "../poller/prefilter";
+import { getActiveCompCeiling } from "../profile/service";
 import { notifyHighScore, scorePosting } from "./service";
 
 // ---------------------------------------------------------------------------
@@ -54,6 +55,7 @@ export async function enqueueOpenCandidates(limit: number): Promise<number> {
 			title: jobPostings.title,
 			location: jobPostings.location,
 			remote: jobPostings.remote,
+			compMin: jobPostings.compMin,
 		})
 		.from(jobPostings)
 		.leftJoin(scoringQueue, eq(scoringQueue.jobPostingId, jobPostings.id))
@@ -66,8 +68,15 @@ export async function enqueueOpenCandidates(limit: number): Promise<number> {
 			),
 		);
 
+	// Don't spend tokens scoring roles above the profile's comp ceiling: if a base
+	// floor is disclosed and it's over the ceiling, skip it. Undisclosed comp is
+	// kept (we can't rule it out on missing data).
+	const ceiling = await getActiveCompCeiling();
+	const underCeiling = (compMin: number | null) =>
+		ceiling === null || compMin === null || compMin <= ceiling;
+
 	const ids = rows
-		.filter((r) => isCandidate(r))
+		.filter((r) => isCandidate(r) && underCeiling(r.compMin))
 		.slice(0, limit)
 		.map((r) => r.id);
 	return enqueueForScoring(ids);

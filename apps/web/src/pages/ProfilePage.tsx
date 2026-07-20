@@ -16,7 +16,12 @@ const RescoreSchema = z.object({ enqueued: z.number().int() });
 
 const EMPTY: IdealJobProfile = {
 	northStar: "",
-	hardFilters: { compFloor: null, locationRule: "", remoteRequired: false },
+	hardFilters: {
+		compFloor: null,
+		compCeiling: null,
+		locationRule: "",
+		remoteRequired: false,
+	},
 	criteria: [{ name: "", weight: 3, description: "" }],
 };
 
@@ -174,7 +179,7 @@ export function ProfilePage() {
 						<h3 className="mb-2 font-medium text-slate-600 text-sm">
 							Hard filters (dealbreakers)
 						</h3>
-						<div className="grid gap-3 sm:grid-cols-3">
+						<div className="grid gap-3 sm:grid-cols-2">
 							<div className="space-y-1">
 								<label
 									htmlFor="compFloor"
@@ -190,6 +195,27 @@ export function ProfilePage() {
 									onChange={(e) =>
 										patchFilters({
 											compFloor:
+												e.target.value === "" ? null : Number(e.target.value),
+										})
+									}
+								/>
+							</div>
+							<div className="space-y-1">
+								<label
+									htmlFor="compCeiling"
+									className="block text-slate-500 text-xs"
+								>
+									Comp ceiling (USD) — hide roles above this
+								</label>
+								<input
+									id="compCeiling"
+									type="number"
+									className={inputCls}
+									placeholder="e.g. 175000"
+									value={draft.hardFilters.compCeiling ?? ""}
+									onChange={(e) =>
+										patchFilters({
+											compCeiling:
 												e.target.value === "" ? null : Number(e.target.value),
 										})
 									}

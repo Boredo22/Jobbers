@@ -43,6 +43,13 @@
       "when": 1784574044369,
       "tag": "0005_broken_lockjaw",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784576812229,
+      "tag": "0006_unusual_magus",
+      "breakpoints": true
     }
   ]
 }
