@@ -1,8 +1,12 @@
-import { type JobListItem, JobListItemSchema } from "@jobber/shared";
+import {
+	type JobListItem,
+	JobListItemSchema,
+	type JobSource,
+} from "@jobber/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";
-import { Badge } from "@/components/ui/badge";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 import {
 	Table,
 	TableBody,
@@ -18,6 +22,19 @@ const JobListSchema = z.array(JobListItemSchema);
 // We render at most this many rows — with thousands of open postings, dumping
 // them all into the DOM would jank the page. A note shows when we've capped.
 const MAX_RENDER = 400;
+
+// How each ingestion source is labelled/coloured in the table. Mirrors the
+// JobSource enum, so adding a source in shared surfaces a compile error here
+// until it's given a badge — the type keeps the UI honest.
+const SOURCE_BADGE: Record<
+	JobSource,
+	{ label: string; variant: BadgeProps["variant"] }
+> = {
+	poller: { label: "ATS", variant: "neutral" },
+	hn: { label: "HN", variant: "amber" },
+	rss: { label: "RSS", variant: "amber" },
+	manual: { label: "Manual", variant: "blue" },
+};
 
 function comp(job: JobListItem): string {
 	if (job.compMin && job.compMax)
@@ -86,6 +103,7 @@ export function JobsPage() {
 							<TableHeader>
 								<TableRow>
 									<TableHead>Company</TableHead>
+									<TableHead>Source</TableHead>
 									<TableHead>Title</TableHead>
 									<TableHead>Location</TableHead>
 									<TableHead>Comp</TableHead>
@@ -97,6 +115,11 @@ export function JobsPage() {
 									<TableRow key={job.id}>
 										<TableCell className="font-medium">
 											{job.companyName}
+										</TableCell>
+										<TableCell>
+											<Badge variant={SOURCE_BADGE[job.source].variant}>
+												{SOURCE_BADGE[job.source].label}
+											</Badge>
 										</TableCell>
 										<TableCell>
 											<a

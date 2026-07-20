@@ -13,6 +13,7 @@ import { profileRoutes } from "./modules/profile/routes";
 import { resumeRoutes } from "./modules/resume/routes";
 import { scoringWorkerPlugin } from "./modules/scoring/queue";
 import { scoringRoutes } from "./modules/scoring/routes";
+import { sourcesRoutes } from "./modules/sources/routes";
 import { tailorRoutes } from "./modules/tailor/routes";
 import { trackerRoutes } from "./modules/tracker/routes";
 
@@ -40,6 +41,7 @@ app.register(scoringRoutes);
 app.register(profileRoutes);
 app.register(resumeRoutes);
 app.register(tailorRoutes);
+app.register(sourcesRoutes);
 
 // Background jobs are plugins too: this one arms the twice-daily poll cron
 // (a no-op unless POLL_SCHEDULE_ENABLED=true).

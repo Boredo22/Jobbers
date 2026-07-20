@@ -11,6 +11,7 @@ const NAV = [
 	{ to: "/pipeline", label: "Pipeline" },
 	{ to: "/profile", label: "Profile" },
 	{ to: "/resume", label: "Resume" },
+	{ to: "/settings", label: "Settings" },
 ];
 
 // Layout is the app shell: a fixed sidebar plus a content area. <Outlet/> is

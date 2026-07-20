@@ -119,6 +119,45 @@ export const JobsQuerySchema = z.object({
 export type JobsQuery = z.infer<typeof JobsQuerySchema>;
 
 // ---------------------------------------------------------------------------
+// Sources — the ingestion registry shown on the Settings page. Every way a job
+// (or a pipeline signal) can enter the system is one row here: the ATS poller
+// today, plus the Phase-4 aggregators/capture/email as "planned". This is the
+// single place to answer "what is being pinged or scraped, and is it healthy?".
+// ---------------------------------------------------------------------------
+export const SourceKindSchema = z.enum([
+	"ats", // polled applicant-tracking boards (greenhouse/lever/ashby)
+	"aggregator", // scraped/parsed feeds (HN Who-is-Hiring, RSS)
+	"manual", // human/bookmarklet capture
+	"email", // IMAP status ingestion (signals, not postings)
+]);
+export type SourceKind = z.infer<typeof SourceKindSchema>;
+
+export const SourceStatusSchema = z.enum(["active", "planned", "disabled"]);
+export type SourceStatus = z.infer<typeof SourceStatusSchema>;
+
+export const SourceSummarySchema = z.object({
+	key: z.string(), // stable id: "poller" | "hn" | "rss" | "manual" | "imap"
+	label: z.string(),
+	kind: SourceKindSchema,
+	status: SourceStatusSchema,
+	description: z.string(),
+	// Postings currently in the DB attributed to this source (null for signal-only
+	// sources like email that never create postings).
+	jobCount: z.number().int().nullable(),
+	openJobCount: z.number().int().nullable(),
+	// How many endpoints this source pings (e.g. active ATS boards); null if N/A.
+	endpoints: z.number().int().nullable(),
+	// Poll health from the most recent run, for pinged sources; null otherwise.
+	health: z
+		.object({ ok: z.number().int(), failing: z.number().int() })
+		.nullable(),
+	lastRunAt: z.coerce.date().nullable(),
+	lastRunNew: z.number().int().nullable(), // postings first seen in that run
+	schedule: z.string().nullable(), // human-readable cadence, or null if on-demand
+});
+export type SourceSummary = z.infer<typeof SourceSummarySchema>;
+
+// ---------------------------------------------------------------------------
 // FitScore — the LLM's verdict on how well a posting matches the candidate.
 // This is the *output contract* the scoring model must satisfy: the AI provider
 // forces the model to return exactly this shape (Phase 2, step 2.2), and it maps
