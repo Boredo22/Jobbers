@@ -1,5 +1,10 @@
 import type { CoverLetterDraft } from "@jobber/shared";
-import { asPdfFile, dropFileAt, findCoverLetterInput, setInputFile } from "./attach";
+import {
+	asPdfFile,
+	dropFileAt,
+	findCoverLetterInput,
+	setInputFile,
+} from "./attach";
 import { coverLetterFilename } from "./filename";
 import {
 	DRAFT_MESSAGE_TYPE,
@@ -133,10 +138,17 @@ function createSidebar(): () => void {
 		scan = scanJobText(document);
 		if (scan.text.length < 80) {
 			generateBtn.disabled = true;
-			setStatus("Couldn't find enough text — select the description by hand and rescan.", "error");
+			setStatus(
+				"Couldn't find enough text — select the description by hand and rescan.",
+				"error",
+			);
 			return;
 		}
-		const label = { selection: "your selection", container: "the description block", page: "the whole page" }[scan.source];
+		const label = {
+			selection: "your selection",
+			container: "the description block",
+			page: "the whole page",
+		}[scan.source];
 		scanInfo.textContent = `Scanned ${scan.text.length.toLocaleString()} characters from ${label}.`;
 		generateBtn.disabled = false;
 		setStatus("Ready to generate.");
@@ -159,7 +171,11 @@ function createSidebar(): () => void {
 			generateBtn.disabled = false;
 			scanBtn.disabled = false;
 			if (!res) {
-				setStatus(chrome.runtime.lastError?.message ?? "No response from the extension worker.", "error");
+				setStatus(
+					chrome.runtime.lastError?.message ??
+						"No response from the extension worker.",
+					"error",
+				);
 				return;
 			}
 			if (!res.ok) {
@@ -171,7 +187,10 @@ function createSidebar(): () => void {
 			letterReady(true);
 			const role = draft.roleTitle === "Unknown" ? "" : ` · ${draft.roleTitle}`;
 			const co = draft.company === "Unknown" ? "" : ` @ ${draft.company}`;
-			setStatus(`Draft ready${role}${co} (${res.data.model}). Edit it, then copy/download/attach.`, "ok");
+			setStatus(
+				`Draft ready${role}${co} (${res.data.model}). Edit it, then copy/download/attach.`,
+				"ok",
+			);
 		});
 	});
 
@@ -208,11 +227,17 @@ function createSidebar(): () => void {
 	attachBtn.addEventListener("click", () => {
 		const input = findCoverLetterInput(document);
 		if (!input) {
-			setStatus("No file input found on this page — try the drag chip on its upload box.", "error");
+			setStatus(
+				"No file input found on this page — try the drag chip on its upload box.",
+				"error",
+			);
 			return;
 		}
 		setInputFile(input, currentPdfFile());
-		setStatus(`Attached ${currentFilename()} to the page's file input — verify it shows up before submitting.`, "ok");
+		setStatus(
+			`Attached ${currentFilename()} to the page's file input — verify it shows up before submitting.`,
+			"ok",
+		);
 	});
 
 	// --- drag-to-dropzone ----------------------------------------------------
@@ -238,12 +263,18 @@ function createSidebar(): () => void {
 		}
 		// Ignore drops back onto the sidebar itself.
 		if (shadow.elementFromPoint?.(x, y)) {
-			setStatus("That landed on the sidebar — drop it on the page's upload box.", "error");
+			setStatus(
+				"That landed on the sidebar — drop it on the page's upload box.",
+				"error",
+			);
 			return;
 		}
 		const target = dropFileAt(document, x, y, currentPdfFile());
 		if (target) {
-			setStatus(`Dropped ${currentFilename()} — check the page picked it up.`, "ok");
+			setStatus(
+				`Dropped ${currentFilename()} — check the page picked it up.`,
+				"ok",
+			);
 		} else {
 			setStatus("Couldn't find a drop target there.", "error");
 		}
