@@ -2,11 +2,10 @@ import {
 	type TailoredDraft,
 	TailoredDraftRecordSchema,
 	TailoredDraftSchema,
-	type TriageItem,
 } from "@jobber/shared";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { diffWords } from "diff";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -14,14 +13,24 @@ import {
 	DialogDescription,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { apiSend } from "@/lib/api";
+import { apiGet, apiSend } from "@/lib/api";
 
 // ---------------------------------------------------------------------------
 // TailorDialog — the tailor-to-posting flow (step 3.2b), opened from a triage
-// card. Generate AI resume edits + a draft outreach note for THIS posting, show
-// the edits as before/after word diffs, let the human finish the outreach note,
-// and save the result as a draft attached to the application.
+// card OR a pipeline card. Generate AI resume edits + a draft outreach note for
+// THIS posting, show the edits as before/after word diffs, let the human finish
+// the outreach note, and save the result as a draft attached to the application.
+// Re-opening the dialog loads the last saved draft, so nothing you saved is
+// ever unreachable.
 // ---------------------------------------------------------------------------
+
+// The minimum the dialog needs to know about a posting. TriageItem satisfies
+// this structurally; PipelinePage builds one from an application row.
+export type TailorTarget = {
+	jobPostingId: string;
+	title: string;
+	companyName: string;
+};
 
 // One edit's before→after, rendered as a two-column word diff: deletions
 // highlighted on the left (original), additions on the right (tailored). Keys are
@@ -82,15 +91,40 @@ export function TailorDialog({
 	item,
 	onClose,
 }: {
-	item: TriageItem | null;
+	item: TailorTarget | null;
 	onClose: () => void;
 }) {
+	const queryClient = useQueryClient();
 	// The current draft (starts as the model's output; the outreach note is then
 	// human-editable before saving). State resets automatically when a different
 	// posting is opened because the parent remounts this component via `key` —
 	// cleaner than a reset-on-prop-change effect.
 	const [draft, setDraft] = useState<TailoredDraft | null>(null);
 	const [saved, setSaved] = useState(false);
+
+	// The last SAVED draft for this posting (null until one is saved). Shared
+	// query key with PipelinePage's outreach-note section, so a save here
+	// refreshes there automatically.
+	const existing = useQuery({
+		queryKey: ["tailor-draft", item?.jobPostingId],
+		queryFn: () =>
+			apiGet(
+				`/api/postings/${item?.jobPostingId}/tailor`,
+				TailoredDraftRecordSchema.nullable(),
+			),
+		enabled: item !== null,
+	});
+
+	// Pre-load the saved draft on open, so the dialog resumes where you left off
+	// instead of a blank "Tailor with AI" screen. The `draft === null` guard
+	// makes this a one-time init: once anything sets draft (this effect or a
+	// generate), it never overwrites again.
+	useEffect(() => {
+		if (existing.data && draft === null) {
+			setDraft(existing.data);
+			setSaved(true);
+		}
+	}, [existing.data, draft]);
 
 	const generate = useMutation({
 		mutationFn: (jobPostingId: string) =>
@@ -114,7 +148,12 @@ export function TailorDialog({
 				vars.body,
 				TailoredDraftRecordSchema,
 			),
-		onSuccess: () => setSaved(true),
+		onSuccess: (_data, vars) => {
+			setSaved(true);
+			queryClient.invalidateQueries({
+				queryKey: ["tailor-draft", vars.jobPostingId],
+			});
+		},
 	});
 
 	// A 409 means "no active resume" — surface that specific, actionable message.
@@ -135,7 +174,13 @@ export function TailorDialog({
 						posting. Everything is a draft; you finish and send it by hand.
 					</DialogDescription>
 
-					{!draft && (
+					{!draft && existing.isPending && (
+						<p className="mt-4 text-slate-500 text-sm">
+							Checking for a saved draft…
+						</p>
+					)}
+
+					{!draft && !existing.isPending && (
 						<div className="mt-4">
 							<Button
 								disabled={generate.isPending}
