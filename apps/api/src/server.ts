@@ -9,6 +9,8 @@ import { adminRoutes } from "./modules/admin/routes";
 import { companiesRoutes } from "./modules/companies/routes";
 import { jobsRoutes } from "./modules/jobs/routes";
 import { schedulerPlugin } from "./modules/poller/scheduler";
+import { scoringWorkerPlugin } from "./modules/scoring/queue";
+import { scoringRoutes } from "./modules/scoring/routes";
 import { trackerRoutes } from "./modules/tracker/routes";
 
 // `.withTypeProvider<ZodTypeProvider>()` rewires Fastify so that any Zod schema
@@ -31,10 +33,14 @@ app.register(adminRoutes);
 app.register(trackerRoutes);
 app.register(jobsRoutes);
 app.register(companiesRoutes);
+app.register(scoringRoutes);
 
 // Background jobs are plugins too: this one arms the twice-daily poll cron
 // (a no-op unless POLL_SCHEDULE_ENABLED=true).
 app.register(schedulerPlugin);
+// …and this drains the scoring queue on a timer (no-op unless
+// SCORING_WORKER_ENABLED=true).
+app.register(scoringWorkerPlugin);
 
 // Top-level await is allowed here because this package is ESM ("type": "module").
 try {

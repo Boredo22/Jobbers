@@ -157,6 +157,18 @@ export const FitScoreSchema = z.object({
 });
 export type FitScore = z.infer<typeof FitScoreSchema>;
 
+// Your thumbs-up/down on a score, plus an optional note. Body of
+// POST /api/scores/:id/feedback (step 2.4). This signal feeds profile revisions
+// in Phase 3 — a down-voted 8 is exactly the kind of miscalibration to learn from.
+export const ScoreVerdictSchema = z.enum(["up", "down"]);
+export type ScoreVerdict = z.infer<typeof ScoreVerdictSchema>;
+
+export const ScoreFeedbackSchema = z.object({
+	verdict: ScoreVerdictSchema,
+	note: z.string().optional(),
+});
+export type ScoreFeedback = z.infer<typeof ScoreFeedbackSchema>;
+
 // ---------------------------------------------------------------------------
 // Application — your pipeline. The event log is the truth; `status` is a fast
 // denormalized mirror of it (see the tracker module + docs/notes/step-1.6.md).

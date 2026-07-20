@@ -74,6 +74,15 @@ const EnvSchema = z.object({
 	// Which AI backend to use (step 2.1's provider abstraction). "api" = Anthropic
 	// Messages API directly; "cli"/"cowork" arrive in Phase 3. Default "api".
 	AI_PROVIDER: z.enum(["api", "cli", "cowork"]).default("api"),
+
+	// Whether the in-process scoring worker drains the scoring_queue on a timer
+	// (step 2.4). Off by default so `tsx watch` restarts don't quietly spend money
+	// scoring queued postings; the deployed container flips it on. The manual
+	// `score:drain` script works regardless of this flag.
+	SCORING_WORKER_ENABLED: z
+		.enum(["true", "false"])
+		.default("false")
+		.transform((v) => v === "true"),
 });
 
 // `.parse` throws a readable ZodError listing exactly which vars are missing or

@@ -128,7 +128,39 @@ export const fitScores = pgTable("fit_scores", {
 	credentialGapFlag: boolean("credential_gap_flag").notNull().default(false),
 	rationale: text("rationale").notNull(),
 	modelUsed: text("model_used").notNull(),
+	// Which prompt version graded this (e.g. "v1"). Stored so a later prompt
+	// rewrite doesn't make old scores lie about how they were produced (step 2.3).
+	promptVersion: text("prompt_version").notNull(),
+	// Your 👍/👎 on the score, and an optional note — feeds profile revisions in
+	// Phase 3. Nullable: most scores never get explicit feedback.
+	feedback: text("feedback", { enum: ["up", "down"] }),
+	feedbackNote: text("feedback_note"),
 	createdAt: timestamp("created_at", { withTimezone: true })
+		.notNull()
+		.defaultNow(),
+});
+
+// --- scoring_queue: the in-process work queue for scoring (step 2.4) ---------
+// v1 "queue" is just a table drained by a setInterval worker — visible in psql,
+// survives restarts (pending rows persist), and needs no Redis. One row per
+// posting (UNIQUE), so a posting is never queued twice.
+export const scoringQueue = pgTable("scoring_queue", {
+	id: uuid("id").defaultRandom().primaryKey(),
+	jobPostingId: uuid("job_posting_id")
+		.notNull()
+		.unique()
+		.references(() => jobPostings.id),
+	// pending → the worker will pick it up; done → scored; error → gave up after
+	// repeated failures (kept as an audit trail, not retried).
+	status: text("status", { enum: ["pending", "done", "error"] })
+		.notNull()
+		.default("pending"),
+	attempts: integer("attempts").notNull().default(0),
+	lastError: text("last_error"),
+	enqueuedAt: timestamp("enqueued_at", { withTimezone: true })
+		.notNull()
+		.defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true })
 		.notNull()
 		.defaultNow(),
 });

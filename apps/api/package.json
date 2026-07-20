@@ -11,7 +11,9 @@
 		"seed": "tsx src/scripts/seed.ts",
 		"import:applications": "tsx src/scripts/import-applications.ts",
 		"validate-tokens": "tsx src/scripts/validate-tokens.ts",
-		"score:one": "tsx src/scripts/score-one.ts"
+		"score:one": "tsx src/scripts/score-one.ts",
+		"score:enqueue": "tsx src/scripts/score-enqueue.ts",
+		"score:drain": "tsx src/scripts/score-drain.ts"
 	},
 	"dependencies": {
 		"@jobber/ai": "workspace:*",

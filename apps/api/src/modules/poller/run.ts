@@ -3,6 +3,7 @@ import pLimit from "p-limit";
 import { db } from "../../db/client";
 import { companies, jobPostings, pollRuns } from "../../db/schema";
 import { notify } from "../../lib/notify";
+import { enqueueForScoring } from "../scoring/queue";
 import { adapters } from "./index";
 import { isCandidate } from "./prefilter";
 
@@ -26,6 +27,7 @@ const CONCURRENCY = 5; // polite cap on simultaneous board fetches
 
 export type PollFailure = { company: string; reason: string };
 export type PollCandidate = {
+	jobPostingId: string;
 	companyId: string;
 	company: string;
 	title: string;
@@ -126,6 +128,7 @@ export async function runPoll(): Promise<PollSummary> {
 								},
 							})
 							.returning({
+								id: jobPostings.id,
 								title: jobPostings.title,
 								location: jobPostings.location,
 								remote: jobPostings.remote,
@@ -141,6 +144,7 @@ export async function runPoll(): Promise<PollSummary> {
 								newCount++;
 								if (isCandidate(row)) {
 									candidates.push({
+										jobPostingId: row.id,
 										companyId: c.id,
 										company: c.name,
 										title: row.title,
@@ -180,7 +184,18 @@ export async function runPoll(): Promise<PollSummary> {
 
 	const finishedAt = new Date();
 
-	// The audit row. (Enqueue-for-scoring on `candidates` lands in step 2.4.)
+	// Enqueue this run's new candidates for AI scoring (step 2.4). Best-effort:
+	// the poll itself already succeeded, so a queue hiccup must not fail the run
+	// or block the audit row. enqueueForScoring is idempotent (UNIQUE + do-nothing).
+	if (candidates.length > 0) {
+		try {
+			await enqueueForScoring(candidates.map((c) => c.jobPostingId));
+		} catch {
+			// swallow — scoring will still pick these up on a later manual enqueue.
+		}
+	}
+
+	// The audit row.
 	await db.insert(pollRuns).values({
 		startedAt,
 		finishedAt,
