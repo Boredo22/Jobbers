@@ -83,7 +83,12 @@ export async function runPoll(): Promise<PollSummary> {
 
 				try {
 					// Narrowed to a pollable type here → indexes the adapter registry.
-					const postings = await adapters[c.atsType](c.atsToken);
+					const postings = await adapters[c.atsType]({
+						token: c.atsToken,
+						workdayShard: c.workdayShard,
+						workdaySite: c.workdaySite,
+						workdaySearch: c.workdaySearch,
+					});
 
 					// Dedupe within this board by externalId. A single INSERT ... ON
 					// CONFLICT can't touch the same conflict target twice, so collapse

@@ -37,6 +37,14 @@ const SOURCE_BADGE: Record<
 	manual: { label: "Manual", variant: "blue" },
 };
 
+// "Jul 21" is enough at a glance; add the year only once a posting is stale
+// enough to be from a previous one.
+function seenDate(d: Date): string {
+	const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+	if (d.getFullYear() !== new Date().getFullYear()) opts.year = "numeric";
+	return d.toLocaleDateString(undefined, opts);
+}
+
 function comp(job: JobListItem): string {
 	if (job.compMin && job.compMax)
 		return `$${Math.round(job.compMin / 1000)}k–$${Math.round(job.compMax / 1000)}k`;
@@ -120,6 +128,7 @@ export function JobsPage() {
 									<TableHead>Title</TableHead>
 									<TableHead>Location</TableHead>
 									<TableHead>Comp</TableHead>
+									<TableHead>First seen</TableHead>
 									<TableHead>Flags</TableHead>
 								</TableRow>
 							</TableHeader>
@@ -149,6 +158,9 @@ export function JobsPage() {
 										</TableCell>
 										<TableCell className="text-slate-600">
 											{comp(job)}
+										</TableCell>
+										<TableCell className="whitespace-nowrap text-slate-600">
+											{seenDate(job.firstSeenAt)}
 										</TableCell>
 										<TableCell className="space-x-1">
 											{job.remote && <Badge variant="blue">Remote</Badge>}

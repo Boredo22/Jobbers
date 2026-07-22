@@ -21,15 +21,17 @@ export class AtsFetchError extends Error {
 	}
 }
 
-export async function fetchJson(url: string): Promise<unknown> {
+async function requestJson(url: string, init?: RequestInit): Promise<unknown> {
 	let res: Response;
 	try {
 		res = await fetch(url, {
+			...init,
 			headers: {
 				accept: "application/json",
 				// Be a polite citizen: identify the client. Some ATS CDNs reject
 				// requests with no User-Agent.
 				"user-agent": "jobber-poller/0.1 (+http://jobber.local)",
+				...init?.headers,
 			},
 			// Native per-request timeout — no response within 15s aborts the fetch.
 			signal: AbortSignal.timeout(15_000),
@@ -46,4 +48,20 @@ export async function fetchJson(url: string): Promise<unknown> {
 	}
 
 	return res.json();
+}
+
+export async function fetchJson(url: string): Promise<unknown> {
+	return requestJson(url);
+}
+
+/**
+ * POST a JSON body, get JSON back. Some boards (Workday's CXS API) take their
+ * query — pagination, search text — as a POST body rather than URL params.
+ */
+export async function postJson(url: string, body: unknown): Promise<unknown> {
+	return requestJson(url, {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify(body),
+	});
 }

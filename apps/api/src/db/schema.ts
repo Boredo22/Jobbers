@@ -48,10 +48,21 @@ export const companies = pgTable("companies", {
 			"recruitee",
 			"breezy",
 			"bamboohr",
+			"workday",
 			"manual",
 		],
 	}).notNull(),
 	atsToken: text("ats_token"), // null for "manual" companies (no pollable API)
+	// Workday-only config (null for every other ATS). One slug isn't enough
+	// there: a board is addressed by tenant (atsToken) + data-center shard
+	// ("wd5") + career-site name ("NVIDIAExternalCareerSite") — all three are
+	// visible in any Workday careers URL.
+	workdayShard: text("workday_shard"),
+	workdaySite: text("workday_site"),
+	// Optional server-side narrowing (the CXS API's searchText). Enterprise
+	// boards run to thousands of postings; a term like "business analyst" keeps
+	// the poll polite. Null = fetch the whole board.
+	workdaySearch: text("workday_search"),
 	fitGroup: integer("fit_group"), // your Group 1–5 tiers
 	notes: text("notes"),
 	active: boolean("active").notNull().default(true),

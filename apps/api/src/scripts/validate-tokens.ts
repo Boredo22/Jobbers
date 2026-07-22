@@ -21,6 +21,10 @@ const CompanySchema = z.object({
 	name: z.string(),
 	atsType: AtsTypeSchema,
 	atsToken: z.string(),
+	// Workday-only addressing (see db/schema.ts); absent for every other ATS.
+	workdayShard: z.string().optional(),
+	workdaySite: z.string().optional(),
+	workdaySearch: z.string().optional(),
 });
 const companies = z
 	.array(CompanySchema)
@@ -87,7 +91,12 @@ const results = await mapWithConcurrency(
 		// After the guard, atsType is narrowed to a pollable platform → indexes the registry.
 		const adapter = adapters[c.atsType];
 		try {
-			const postings = await adapter(c.atsToken);
+			const postings = await adapter({
+				token: c.atsToken,
+				workdayShard: c.workdayShard ?? null,
+				workdaySite: c.workdaySite ?? null,
+				workdaySearch: c.workdaySearch ?? null,
+			});
 			return {
 				name: c.name,
 				atsType: c.atsType,

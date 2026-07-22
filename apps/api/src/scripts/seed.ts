@@ -23,6 +23,10 @@ const CompanySeedSchema = z.object({
 	atsType: AtsTypeSchema, // reuse the shared enum — one source of truth
 	atsToken: z.string().min(1),
 	tier: z.enum(["A", "B", "C", "C-travel"]),
+	// Workday-only addressing (see db/schema.ts); omit for every other ATS.
+	workdayShard: z.string().min(1).optional(),
+	workdaySite: z.string().min(1).optional(),
+	workdaySearch: z.string().min(1).optional(),
 });
 type CompanySeed = z.infer<typeof CompanySeedSchema>;
 
@@ -58,6 +62,9 @@ async function seed() {
 		name: s.name,
 		atsType: s.atsType,
 		atsToken: s.atsToken,
+		workdayShard: s.workdayShard ?? null,
+		workdaySite: s.workdaySite ?? null,
+		workdaySearch: s.workdaySearch ?? null,
 		fitGroup: TIER_TO_FIT_GROUP[s.tier],
 		notes:
 			s.tier === "C-travel" ? "tier C — travel required" : `tier ${s.tier}`,

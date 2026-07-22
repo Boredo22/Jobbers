@@ -7,6 +7,7 @@ import type { LeverJob } from "./lever";
 import type { RecruiteeJob } from "./recruitee";
 import type { SmartRecruitersJob } from "./smartrecruiters";
 import type { WorkableJob } from "./workable";
+import type { WorkdayJob } from "./workday";
 
 // ---------------------------------------------------------------------------
 // normalize.ts — turn each platform's shape into ONE common shape.
@@ -251,6 +252,28 @@ export function normalizeBamboo(jobs: BambooJob[]): NormalizedPosting[] {
 			compMax: null,
 			description,
 			contentHash: contentHashOf(j.jobOpeningName, description),
+		};
+	});
+}
+
+export function normalizeWorkday(jobs: WorkdayJob[]): NormalizedPosting[] {
+	return jobs.map((j) => {
+		const description = j.descriptionHtml
+			? stripHtml(j.descriptionHtml) || null
+			: null;
+		// Workday has no structured remote flag on either endpoint; some tenants
+		// write "Remote" into the location text, so detectRemote is all we get.
+		const location = j.locationsText;
+		return {
+			externalId: j.externalId,
+			title: j.title,
+			url: j.url,
+			location,
+			remote: detectRemote(location),
+			compMin: null,
+			compMax: null,
+			description,
+			contentHash: contentHashOf(j.title, description),
 		};
 	});
 }

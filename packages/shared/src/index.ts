@@ -32,6 +32,7 @@ export const AtsTypeSchema = z.enum([
 	"recruitee",
 	"breezy",
 	"bamboohr",
+	"workday",
 	"manual",
 ]);
 export type AtsType = z.infer<typeof AtsTypeSchema>;

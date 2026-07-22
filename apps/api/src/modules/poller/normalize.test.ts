@@ -5,6 +5,7 @@ import {
 	normalizeRecruitee,
 	normalizeSmartRecruiters,
 	normalizeWorkable,
+	normalizeWorkday,
 } from "./normalize";
 
 // The normalizers are pure (raw platform objects in, NormalizedPosting out),
@@ -12,6 +13,44 @@ import {
 // the client's Zod parse — and assertions on the mapping decisions that
 // matter: external-id stringification, URL fallbacks, HTML stripping,
 // remote-flag precedence, and the drop-postings-without-URL rule.
+
+describe("normalizeWorkday", () => {
+	it("maps a full posting: strips the HTML JD, keeps the req-id externalId", () => {
+		const [p] = normalizeWorkday([
+			{
+				externalId: "JR2018844",
+				title: "PDM Business Analyst",
+				locationsText: "China, Shenzhen",
+				descriptionHtml: "<p>Drive <b>PLM</b> processes&nbsp;at scale</p>",
+				url: "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite/job/China-Shenzhen/Senior-PDM-Business-Analyst_JR2018844",
+			},
+		]);
+		expect(p).toMatchObject({
+			externalId: "JR2018844",
+			title: "PDM Business Analyst",
+			location: "China, Shenzhen",
+			remote: false, // no "remote" in the location text
+			description: "Drive PLM processes at scale",
+		});
+	});
+
+	it("survives a failed detail fetch and infers remote from the location text", () => {
+		const [p] = normalizeWorkday([
+			{
+				externalId: "/job/USA/Analyst_JR1", // externalPath fallback id
+				title: "Business Systems Analyst",
+				locationsText: "Remote - USA",
+				descriptionHtml: null,
+				url: "https://acme.wd1.myworkdayjobs.com/Careers/job/USA/Analyst_JR1",
+			},
+		]);
+		expect(p).toMatchObject({
+			externalId: "/job/USA/Analyst_JR1",
+			description: null,
+			remote: true, // detectRemote("Remote - USA")
+		});
+	});
+});
 
 describe("normalizeSmartRecruiters", () => {
 	it("maps a full posting, stitching jobAd sections into one description", () => {
